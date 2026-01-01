@@ -6,6 +6,7 @@ import { MoveHistory } from './MoveHistory';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
+import { useStockfish } from '@/hooks/useStockfish';
 
 interface GameScreenProps {
   bot: Bot;
@@ -17,67 +18,49 @@ export const GameScreen = ({ bot, playerColor, onBack }: GameScreenProps) => {
   const [game, setGame] = useState(() => new Chess());
   const [moves, setMoves] = useState<string[]>([]);
   const [isThinking, setIsThinking] = useState(false);
+  const [gameKey, setGameKey] = useState(0);
 
-  // Calculate bot delay based on elo
-  const getBotDelay = () => {
-    const baseDelay = 500;
-    const eloFactor = Math.min(bot.elo / 2000, 1);
-    return baseDelay + eloFactor * 1500;
-  };
+  const { getBestMove } = useStockfish({ elo: bot.elo, moveTime: 100 });
 
-  // Simple bot move logic - weighted random based on elo
-  const makeBotMove = useCallback(() => {
+  const makeBotMove = useCallback(async () => {
     if (game.isGameOver()) return;
     
     setIsThinking(true);
     
-    setTimeout(() => {
-      const possibleMoves = game.moves();
-      if (possibleMoves.length === 0) return;
-
-      // Higher elo = slightly better moves (capture preference, center control)
-      let selectedMove: string;
+    try {
+      const bestMoveUci = await getBestMove(game.fen());
       
-      if (bot.elo >= 1500 && Math.random() < 0.6) {
-        // Prefer captures
-        const captures = possibleMoves.filter(m => m.includes('x'));
-        if (captures.length > 0) {
-          selectedMove = captures[Math.floor(Math.random() * captures.length)];
-        } else {
-          selectedMove = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
-        }
-      } else if (bot.elo >= 1000 && Math.random() < 0.4) {
-        // Slight center preference
-        const centerMoves = possibleMoves.filter(m => 
-          m.includes('d') || m.includes('e') || m.includes('4') || m.includes('5')
-        );
-        if (centerMoves.length > 0) {
-          selectedMove = centerMoves[Math.floor(Math.random() * centerMoves.length)];
-        } else {
-          selectedMove = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
-        }
-      } else {
-        selectedMove = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
-      }
+      if (bestMoveUci && bestMoveUci !== '(none)') {
+        const from = bestMoveUci.slice(0, 2);
+        const to = bestMoveUci.slice(2, 4);
+        const promotion = bestMoveUci.length > 4 ? bestMoveUci[4] : undefined;
 
-      const newGame = new Chess(game.fen());
-      newGame.move(selectedMove);
-      setGame(newGame);
-      setMoves(prev => [...prev, selectedMove]);
+        const newGame = new Chess(game.fen());
+        const move = newGame.move({ from, to, promotion });
+        
+        if (move) {
+          setGame(newGame);
+          setMoves(prev => [...prev, move.san]);
+          
+          if (newGame.isGameOver()) {
+            handleGameEnd(newGame);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Stockfish error:', error);
+    } finally {
       setIsThinking(false);
-
-      if (newGame.isGameOver()) {
-        handleGameEnd(newGame);
-      }
-    }, getBotDelay());
-  }, [game, bot.elo]);
+    }
+  }, [game, getBestMove]);
 
   // Bot moves first if player is black
   useEffect(() => {
     if (playerColor === 'black' && game.turn() === 'w' && moves.length === 0) {
-      makeBotMove();
+      const timer = setTimeout(() => makeBotMove(), 300);
+      return () => clearTimeout(timer);
     }
-  }, [playerColor, game, moves.length, makeBotMove]);
+  }, [playerColor, game, moves.length, makeBotMove, gameKey]);
 
   const handleGameEnd = (g: Chess) => {
     if (g.isCheckmate()) {
@@ -92,7 +75,7 @@ export const GameScreen = ({ bot, playerColor, onBack }: GameScreenProps) => {
     }
   };
 
-  const handleMove = (from: string, to: string): boolean => {
+  const handleMove = useCallback((from: string, to: string): boolean => {
     try {
       const newGame = new Chess(game.fen());
       const move = newGame.move({ from, to, promotion: 'q' });
@@ -113,14 +96,12 @@ export const GameScreen = ({ bot, playerColor, onBack }: GameScreenProps) => {
       return false;
     }
     return false;
-  };
+  }, [game, makeBotMove]);
 
   const handleReset = () => {
     setGame(new Chess());
     setMoves([]);
-    if (playerColor === 'black') {
-      setTimeout(() => makeBotMove(), 500);
-    }
+    setGameKey(prev => prev + 1);
   };
 
   return (
