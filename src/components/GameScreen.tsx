@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Chess } from 'chess.js';
 import { Bot } from '@/types/bot';
 import { ChessBoard } from './ChessBoard';
@@ -15,31 +15,41 @@ interface GameScreenProps {
 }
 
 export const GameScreen = ({ bot, playerColor, onBack }: GameScreenProps) => {
-  const [game, setGame] = useState(() => new Chess());
+  const [fen, setFen] = useState('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1');
   const [moves, setMoves] = useState<string[]>([]);
   const [isThinking, setIsThinking] = useState(false);
   const [gameKey, setGameKey] = useState(0);
+  const isProcessingRef = useRef(false);
 
-  const { getBestMove } = useStockfish({ elo: bot.elo, moveTime: 100 });
+  const { getBestMove } = useStockfish({ elo: bot.elo, moveTime: 500 });
 
-  const makeBotMove = useCallback(async () => {
-    if (game.isGameOver()) return;
+  const game = new Chess(fen);
+
+  const makeBotMove = useCallback(async (currentFen: string) => {
+    if (isProcessingRef.current) return;
     
+    const tempGame = new Chess(currentFen);
+    if (tempGame.isGameOver()) return;
+    
+    isProcessingRef.current = true;
     setIsThinking(true);
     
     try {
-      const bestMoveUci = await getBestMove(game.fen());
+      console.log('Bot thinking with FEN:', currentFen);
+      const bestMoveUci = await getBestMove(currentFen);
+      console.log('Bot best move:', bestMoveUci);
       
       if (bestMoveUci && bestMoveUci !== '(none)') {
         const from = bestMoveUci.slice(0, 2);
         const to = bestMoveUci.slice(2, 4);
         const promotion = bestMoveUci.length > 4 ? bestMoveUci[4] : undefined;
 
-        const newGame = new Chess(game.fen());
+        const newGame = new Chess(currentFen);
         const move = newGame.move({ from, to, promotion });
         
         if (move) {
-          setGame(newGame);
+          console.log('Bot played:', move.san);
+          setFen(newGame.fen());
           setMoves(prev => [...prev, move.san]);
           
           if (newGame.isGameOver()) {
@@ -51,16 +61,19 @@ export const GameScreen = ({ bot, playerColor, onBack }: GameScreenProps) => {
       console.error('Stockfish error:', error);
     } finally {
       setIsThinking(false);
+      isProcessingRef.current = false;
     }
-  }, [game, getBestMove]);
+  }, [getBestMove, bot.name]);
 
   // Bot moves first if player is black
   useEffect(() => {
-    if (playerColor === 'black' && game.turn() === 'w' && moves.length === 0) {
-      const timer = setTimeout(() => makeBotMove(), 300);
+    if (playerColor === 'black' && moves.length === 0) {
+      const timer = setTimeout(() => {
+        makeBotMove(fen);
+      }, 500);
       return () => clearTimeout(timer);
     }
-  }, [playerColor, game, moves.length, makeBotMove, gameKey]);
+  }, [playerColor, gameKey]); // Only run on game start/reset
 
   const handleGameEnd = (g: Chess) => {
     if (g.isCheckmate()) {
@@ -76,31 +89,49 @@ export const GameScreen = ({ bot, playerColor, onBack }: GameScreenProps) => {
   };
 
   const handleMove = useCallback((from: string, to: string): boolean => {
+    if (isProcessingRef.current || isThinking) return false;
+    
     try {
-      const newGame = new Chess(game.fen());
-      const move = newGame.move({ from, to, promotion: 'q' });
+      const currentGame = new Chess(fen);
+      
+      // Check if it's the player's turn
+      const isWhiteTurn = currentGame.turn() === 'w';
+      const isPlayerTurn = (playerColor === 'white' && isWhiteTurn) || 
+                           (playerColor === 'black' && !isWhiteTurn);
+      
+      if (!isPlayerTurn) {
+        console.log('Not player turn');
+        return false;
+      }
+
+      const move = currentGame.move({ from, to, promotion: 'q' });
       
       if (move) {
-        setGame(newGame);
+        console.log('Player played:', move.san);
+        const newFen = currentGame.fen();
+        setFen(newFen);
         setMoves(prev => [...prev, move.san]);
 
-        if (newGame.isGameOver()) {
-          handleGameEnd(newGame);
+        if (currentGame.isGameOver()) {
+          handleGameEnd(currentGame);
         } else {
-          // Bot responds
-          setTimeout(() => makeBotMove(), 100);
+          // Bot responds after a delay
+          setTimeout(() => makeBotMove(newFen), 300);
         }
         return true;
       }
-    } catch {
+    } catch (e) {
+      console.error('Move error:', e);
       return false;
     }
     return false;
-  }, [game, makeBotMove]);
+  }, [fen, playerColor, isThinking, makeBotMove]);
 
   const handleReset = () => {
-    setGame(new Chess());
+    isProcessingRef.current = false;
+    setFen('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1');
     setMoves([]);
+    setIsThinking(false);
     setGameKey(prev => prev + 1);
   };
 
@@ -159,9 +190,11 @@ export const GameScreen = ({ bot, playerColor, onBack }: GameScreenProps) => {
           )}
         </div>
         <ChessBoard 
-          game={game} 
+          key={gameKey}
+          fen={fen}
           playerColor={playerColor} 
           onMove={handleMove}
+          disabled={isThinking}
         />
       </div>
     </div>
