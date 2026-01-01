@@ -1,12 +1,43 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useState } from 'react';
+import { Bot } from '@/types/bot';
+import { BotSelector } from '@/components/BotSelector';
+import { GameScreen } from '@/components/GameScreen';
 
 const Index = () => {
+  const [currentBot, setCurrentBot] = useState<Bot | null>(null);
+  const [playerColor, setPlayerColor] = useState<'white' | 'black'>('white');
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  const handleStartGame = (bot: Bot, color: 'white' | 'black') => {
+    setCurrentBot(bot);
+    setPlayerColor(color);
+    setIsPlaying(true);
+  };
+
+  const handleBackToSelector = () => {
+    setIsPlaying(false);
+    setCurrentBot(null);
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
-      </div>
+    <div className="min-h-screen bg-background py-8 px-4">
+      <header className="text-center mb-8">
+        <h1 className="font-fredoka text-4xl md:text-5xl lg:text-6xl font-bold text-title">
+          Play vs bots
+        </h1>
+      </header>
+
+      <main className="flex justify-center">
+        {isPlaying && currentBot ? (
+          <GameScreen 
+            bot={currentBot} 
+            playerColor={playerColor} 
+            onBack={handleBackToSelector}
+          />
+        ) : (
+          <BotSelector onStartGame={handleStartGame} />
+        )}
+      </main>
     </div>
   );
 };
