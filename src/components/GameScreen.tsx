@@ -3,6 +3,7 @@ import { Chess } from 'chess.js';
 import { Bot } from '@/types/bot';
 import { ChessBoard } from './ChessBoard';
 import { MoveHistory } from './MoveHistory';
+import { PromotionDialog } from './PromotionDialog';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
@@ -20,6 +21,7 @@ export const GameScreen = ({ bot, playerColor, onBack }: GameScreenProps) => {
   const [isThinking, setIsThinking] = useState(false);
   const [gameKey, setGameKey] = useState(0);
   const [lastMove, setLastMove] = useState<{ from: string; to: string } | null>(null);
+  const [pendingPromotion, setPendingPromotion] = useState<{ from: string; to: string } | null>(null);
   const isProcessingRef = useRef(false);
 
   const { getBestMove } = useStockfish({ elo: bot.elo, moveTime: 500 });
@@ -90,7 +92,7 @@ export const GameScreen = ({ bot, playerColor, onBack }: GameScreenProps) => {
     }
   };
 
-  const handleMove = useCallback((from: string, to: string): boolean => {
+  const handleMove = useCallback((from: string, to: string, promotion?: 'q' | 'r' | 'b' | 'n'): boolean => {
     if (isProcessingRef.current || isThinking) return false;
     
     try {
@@ -106,7 +108,7 @@ export const GameScreen = ({ bot, playerColor, onBack }: GameScreenProps) => {
         return false;
       }
 
-      const move = currentGame.move({ from, to, promotion: 'q' });
+      const move = currentGame.move({ from, to, promotion });
       
       if (move) {
         console.log('Player played:', move.san);
@@ -130,12 +132,28 @@ export const GameScreen = ({ bot, playerColor, onBack }: GameScreenProps) => {
     return false;
   }, [fen, playerColor, isThinking, makeBotMove]);
 
+  const handlePromotionNeeded = useCallback((from: string, to: string) => {
+    setPendingPromotion({ from, to });
+  }, []);
+
+  const handlePromotionSelect = useCallback((piece: 'q' | 'r' | 'b' | 'n') => {
+    if (pendingPromotion) {
+      handleMove(pendingPromotion.from, pendingPromotion.to, piece);
+      setPendingPromotion(null);
+    }
+  }, [pendingPromotion, handleMove]);
+
+  const handlePromotionCancel = useCallback(() => {
+    setPendingPromotion(null);
+  }, []);
+
   const handleReset = () => {
     isProcessingRef.current = false;
     setFen('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1');
     setMoves([]);
     setIsThinking(false);
     setLastMove(null);
+    setPendingPromotion(null);
     setGameKey(prev => prev + 1);
   };
 
@@ -200,8 +218,17 @@ export const GameScreen = ({ bot, playerColor, onBack }: GameScreenProps) => {
           onMove={handleMove}
           disabled={isThinking}
           lastMove={lastMove}
+          onPromotionNeeded={handlePromotionNeeded}
         />
       </div>
+
+      {/* Promotion Dialog */}
+      <PromotionDialog
+        isOpen={!!pendingPromotion}
+        color={playerColor === 'white' ? 'w' : 'b'}
+        onSelect={handlePromotionSelect}
+        onCancel={handlePromotionCancel}
+      />
     </div>
   );
 };
