@@ -7,10 +7,11 @@ interface ChessBoardProps {
   playerColor: 'white' | 'black';
   onMove: (from: string, to: string) => boolean;
   disabled?: boolean;
+  lastMove?: { from: string; to: string } | null;
 }
 
 export const ChessBoard = forwardRef<HTMLDivElement, ChessBoardProps>(
-  ({ fen, playerColor, onMove, disabled = false }, ref) => {
+  ({ fen, playerColor, onMove, disabled = false, lastMove = null }, ref) => {
     const [selectedSquare, setSelectedSquare] = useState<string | null>(null);
     const [legalMoves, setLegalMoves] = useState<string[]>([]);
     const [draggedPiece, setDraggedPiece] = useState<string | null>(null);
@@ -181,6 +182,7 @@ export const ChessBoard = forwardRef<HTMLDivElement, ChessBoardProps>(
               const isSelected = selectedSquare === square;
               const isLegalMove = legalMoves.includes(square);
               const isDragging = draggedPiece === square;
+              const isLastMove = lastMove?.from === square || lastMove?.to === square;
 
               return (
                 <div
@@ -192,7 +194,9 @@ export const ChessBoard = forwardRef<HTMLDivElement, ChessBoardProps>(
                     w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 lg:w-16 lg:h-16
                     flex items-center justify-center relative
                     transition-all duration-150
-                    ${isLight ? 'bg-chess-light' : 'bg-chess-dark'}
+                    ${isLastMove 
+                      ? (isLight ? 'bg-yellow-300' : 'bg-yellow-600') 
+                      : (isLight ? 'bg-chess-light' : 'bg-chess-dark')}
                     ${isSelected ? 'ring-4 ring-inset ring-yellow-400' : ''}
                     hover:brightness-110 cursor-pointer
                   `}

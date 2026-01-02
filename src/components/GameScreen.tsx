@@ -19,6 +19,7 @@ export const GameScreen = ({ bot, playerColor, onBack }: GameScreenProps) => {
   const [moves, setMoves] = useState<string[]>([]);
   const [isThinking, setIsThinking] = useState(false);
   const [gameKey, setGameKey] = useState(0);
+  const [lastMove, setLastMove] = useState<{ from: string; to: string } | null>(null);
   const isProcessingRef = useRef(false);
 
   const { getBestMove } = useStockfish({ elo: bot.elo, moveTime: 500 });
@@ -51,6 +52,7 @@ export const GameScreen = ({ bot, playerColor, onBack }: GameScreenProps) => {
           console.log('Bot played:', move.san);
           setFen(newGame.fen());
           setMoves(prev => [...prev, move.san]);
+          setLastMove({ from, to });
           
           if (newGame.isGameOver()) {
             handleGameEnd(newGame);
@@ -111,6 +113,7 @@ export const GameScreen = ({ bot, playerColor, onBack }: GameScreenProps) => {
         const newFen = currentGame.fen();
         setFen(newFen);
         setMoves(prev => [...prev, move.san]);
+        setLastMove({ from, to });
 
         if (currentGame.isGameOver()) {
           handleGameEnd(currentGame);
@@ -132,6 +135,7 @@ export const GameScreen = ({ bot, playerColor, onBack }: GameScreenProps) => {
     setFen('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1');
     setMoves([]);
     setIsThinking(false);
+    setLastMove(null);
     setGameKey(prev => prev + 1);
   };
 
@@ -195,6 +199,7 @@ export const GameScreen = ({ bot, playerColor, onBack }: GameScreenProps) => {
           playerColor={playerColor} 
           onMove={handleMove}
           disabled={isThinking}
+          lastMove={lastMove}
         />
       </div>
     </div>

@@ -3,32 +3,32 @@ interface ChessPieceProps {
   color: 'w' | 'b';
 }
 
-const pieceSymbols: Record<string, { w: string; b: string }> = {
-  k: { w: '♔', b: '♚' },
-  q: { w: '♕', b: '♛' },
-  r: { w: '♖', b: '♜' },
-  b: { w: '♗', b: '♝' },
-  n: { w: '♘', b: '♞' },
-  p: { w: '♙', b: '♟' },
+// Lichess cburnett piece set URLs
+const getPieceUrl = (piece: string, color: 'w' | 'b'): string => {
+  const colorName = color === 'w' ? 'white' : 'black';
+  const pieceNames: Record<string, string> = {
+    k: 'king',
+    q: 'queen',
+    r: 'rook',
+    b: 'bishop',
+    n: 'knight',
+    p: 'pawn',
+  };
+  const pieceName = pieceNames[piece.toLowerCase()];
+  return `https://lichess1.org/assets/_BcVVbc/piece/cburnett/${colorName[0]}${piece.toUpperCase()}.svg`;
 };
 
 export const ChessPiece = ({ piece, color }: ChessPieceProps) => {
   if (!piece) return null;
   
-  const symbol = pieceSymbols[piece.toLowerCase()]?.[color];
+  const pieceUrl = getPieceUrl(piece, color);
   
   return (
-    <span 
-      className={`
-        text-3xl md:text-4xl lg:text-5xl
-        select-none cursor-grab active:cursor-grabbing
-        ${color === 'w' ? 'text-chess-pieceLight drop-shadow-md' : 'text-chess-pieceDark'}
-      `}
-      style={{ 
-        textShadow: color === 'w' ? '1px 1px 2px rgba(0,0,0,0.5)' : 'none' 
-      }}
-    >
-      {symbol}
-    </span>
+    <img 
+      src={pieceUrl}
+      alt={`${color === 'w' ? 'White' : 'Black'} ${piece}`}
+      className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 lg:w-14 lg:h-14 select-none pointer-events-none"
+      draggable={false}
+    />
   );
 };
