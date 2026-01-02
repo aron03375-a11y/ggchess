@@ -5,13 +5,14 @@ import { ChessPiece } from './ChessPiece';
 interface ChessBoardProps {
   fen: string;
   playerColor: 'white' | 'black';
-  onMove: (from: string, to: string) => boolean;
+  onMove: (from: string, to: string, promotion?: 'q' | 'r' | 'b' | 'n') => boolean;
   disabled?: boolean;
   lastMove?: { from: string; to: string } | null;
+  onPromotionNeeded?: (from: string, to: string) => void;
 }
 
 export const ChessBoard = forwardRef<HTMLDivElement, ChessBoardProps>(
-  ({ fen, playerColor, onMove, disabled = false, lastMove = null }, ref) => {
+  ({ fen, playerColor, onMove, disabled = false, lastMove = null, onPromotionNeeded }, ref) => {
     const [selectedSquare, setSelectedSquare] = useState<string | null>(null);
     const [legalMoves, setLegalMoves] = useState<string[]>([]);
     const [draggedPiece, setDraggedPiece] = useState<string | null>(null);
@@ -47,6 +48,13 @@ export const ChessBoard = forwardRef<HTMLDivElement, ChessBoardProps>(
       return moves.map(m => m.to);
     }, [fen]);
 
+    const isPromotionMove = useCallback((from: string, to: string) => {
+      const piece = game.get(from as Square);
+      if (!piece || piece.type !== 'p') return false;
+      const toRank = to[1];
+      return (piece.color === 'w' && toRank === '8') || (piece.color === 'b' && toRank === '1');
+    }, [fen]);
+
     const clearSelection = () => {
       setSelectedSquare(null);
       setLegalMoves([]);
@@ -57,6 +65,12 @@ export const ChessBoard = forwardRef<HTMLDivElement, ChessBoardProps>(
 
       if (selectedSquare) {
         if (legalMoves.includes(square)) {
+          // Check if this is a promotion move
+          if (isPromotionMove(selectedSquare, square)) {
+            onPromotionNeeded?.(selectedSquare, square);
+            clearSelection();
+            return;
+          }
           const success = onMove(selectedSquare, square);
           if (success) {
             clearSelection();
@@ -74,7 +88,7 @@ export const ChessBoard = forwardRef<HTMLDivElement, ChessBoardProps>(
         setSelectedSquare(square);
         setLegalMoves(getLegalMovesForSquare(square));
       }
-    }, [selectedSquare, legalMoves, isPlayerTurn, isPlayerPiece, getLegalMovesForSquare, onMove]);
+    }, [selectedSquare, legalMoves, isPlayerTurn, isPlayerPiece, getLegalMovesForSquare, onMove, isPromotionMove, onPromotionNeeded]);
 
     const getSquareFromPoint = useCallback((x: number, y: number): string | null => {
       if (!boardRef.current) return null;
@@ -121,13 +135,17 @@ export const ChessBoard = forwardRef<HTMLDivElement, ChessBoardProps>(
         const tempGame = new Chess(fen);
         const moveLegal = tempGame.moves({ square: fromSquare as Square, verbose: true }).map(m => m.to);
         if (moveLegal.includes(targetSquare as Square)) {
-          onMove(fromSquare, targetSquare);
+          if (isPromotionMove(fromSquare, targetSquare)) {
+            onPromotionNeeded?.(fromSquare, targetSquare);
+          } else {
+            onMove(fromSquare, targetSquare);
+          }
         }
       }
 
       setDraggedPiece(null);
       clearSelection();
-    }, [onMove, fen]);
+    }, [onMove, fen, isPromotionMove, onPromotionNeeded]);
 
     const handleNativeDragEnd = useCallback(() => {
       setDraggedPiece(null);
@@ -159,13 +177,17 @@ export const ChessBoard = forwardRef<HTMLDivElement, ChessBoardProps>(
       const targetSquare = getSquareFromPoint(touch.clientX, touch.clientY);
 
       if (targetSquare && legalMoves.includes(targetSquare)) {
-        onMove(draggedPiece, targetSquare);
+        if (isPromotionMove(draggedPiece, targetSquare)) {
+          onPromotionNeeded?.(draggedPiece, targetSquare);
+        } else {
+          onMove(draggedPiece, targetSquare);
+        }
       }
 
       setDraggedPiece(null);
       setDragPosition(null);
       clearSelection();
-    }, [draggedPiece, legalMoves, getSquareFromPoint, onMove]);
+    }, [draggedPiece, legalMoves, getSquareFromPoint, onMove, isPromotionMove, onPromotionNeeded]);
 
     return (
       <div className="relative" ref={ref}>
