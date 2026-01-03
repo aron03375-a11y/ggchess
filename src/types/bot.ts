@@ -2,6 +2,7 @@ export interface Bot {
   id: string;
   name: string;
   elo: number;
+  skillLevel: number; // Stockfish skill level 0-20
   image: string;
   greeting: string;
   category: 'aron' | 'newyear';

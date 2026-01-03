@@ -24,7 +24,7 @@ export const GameScreen = ({ bot, playerColor, onBack }: GameScreenProps) => {
   const [pendingPromotion, setPendingPromotion] = useState<{ from: string; to: string } | null>(null);
   const isProcessingRef = useRef(false);
 
-  const { getBestMove } = useStockfish({ elo: bot.elo, moveTime: 500 });
+  const { getBestMove } = useStockfish({ skillLevel: bot.skillLevel, moveTime: 500 });
 
   const game = new Chess(fen);
 
