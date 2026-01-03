@@ -31,9 +31,12 @@ export const useStockfish = ({ elo, moveTime = 500 }: UseStockfishOptions) => {
           console.log('Stockfish:', message);
           
           if (message === 'uciok') {
-            // Set skill level based on ELO (0-20 scale)
+            // Use UCI_LimitStrength and UCI_Elo for accurate ELO-based play
+            console.log('Setting UCI_Elo:', elo);
+            worker.postMessage('setoption name UCI_LimitStrength value true');
+            worker.postMessage(`setoption name UCI_Elo value ${elo}`);
+            // Also set Skill Level as fallback (0-20 scale)
             const skillLevel = Math.min(20, Math.max(0, Math.floor((elo - 800) / 60)));
-            console.log('Setting skill level:', skillLevel);
             worker.postMessage(`setoption name Skill Level value ${skillLevel}`);
             worker.postMessage('isready');
           } else if (message === 'readyok') {
