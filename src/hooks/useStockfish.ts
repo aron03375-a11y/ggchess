@@ -1,11 +1,11 @@
 import { useRef, useCallback, useEffect, useState } from 'react';
 
 interface UseStockfishOptions {
-  elo: number;
+  skillLevel: number; // 0-20
   moveTime?: number;
 }
 
-export const useStockfish = ({ elo, moveTime = 500 }: UseStockfishOptions) => {
+export const useStockfish = ({ skillLevel, moveTime = 500 }: UseStockfishOptions) => {
   const workerRef = useRef<Worker | null>(null);
   const resolverRef = useRef<((move: string | null) => void) | null>(null);
   const [isReady, setIsReady] = useState(false);
@@ -31,10 +31,10 @@ export const useStockfish = ({ elo, moveTime = 500 }: UseStockfishOptions) => {
           console.log('Stockfish:', message);
           
           if (message === 'uciok') {
-            // Set skill level based on ELO (0-20 scale)
-            const skillLevel = Math.min(20, Math.max(0, Math.floor((elo - 800) / 60)));
-            console.log('Setting skill level:', skillLevel);
-            worker.postMessage(`setoption name Skill Level value ${skillLevel}`);
+            // Use skill level directly (0-20 scale)
+            const clampedSkillLevel = Math.min(20, Math.max(0, skillLevel));
+            console.log('Setting skill level:', clampedSkillLevel);
+            worker.postMessage(`setoption name Skill Level value ${clampedSkillLevel}`);
             worker.postMessage('isready');
           } else if (message === 'readyok') {
             console.log('Stockfish ready');
@@ -67,7 +67,7 @@ export const useStockfish = ({ elo, moveTime = 500 }: UseStockfishOptions) => {
     } catch (e) {
       console.error('Failed to create Stockfish worker:', e);
     }
-  }, [elo]);
+  }, [skillLevel]);
 
   const getBestMove = useCallback((fen: string): Promise<string | null> => {
     return new Promise((resolve) => {
