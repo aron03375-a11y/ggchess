@@ -182,6 +182,11 @@ export const GameScreen = ({ bot, playerColor, onBack }: GameScreenProps) => {
               <p className="text-sm text-muted-foreground">ELO: {bot.elo}</p>
             </div>
           </div>
+          {isThinking && (
+            <p className="text-sm text-muted-foreground mt-2 animate-pulse">
+              {bot.name} is thinking...
+            </p>
+          )}
         </div>
 
         <Button 
