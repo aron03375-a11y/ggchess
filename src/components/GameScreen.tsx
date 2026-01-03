@@ -182,11 +182,6 @@ export const GameScreen = ({ bot, playerColor, onBack }: GameScreenProps) => {
               <p className="text-sm text-muted-foreground">ELO: {bot.elo}</p>
             </div>
           </div>
-          {isThinking && (
-            <p className="text-sm text-muted-foreground mt-2 animate-pulse">
-              {bot.name} is thinking...
-            </p>
-          )}
         </div>
 
         <Button 
@@ -197,11 +192,9 @@ export const GameScreen = ({ bot, playerColor, onBack }: GameScreenProps) => {
           <RotateCcw size={18} />
           New Game
         </Button>
-
-        <MoveHistory moves={moves} />
       </div>
 
-      {/* Center - Chess Board */}
+      {/* Center - Chess Board and Move History */}
       <div className="flex flex-col items-center gap-4">
         <div className="text-center">
           <p className="text-muted-foreground text-sm mb-1">
@@ -220,6 +213,7 @@ export const GameScreen = ({ bot, playerColor, onBack }: GameScreenProps) => {
           lastMove={lastMove}
           onPromotionNeeded={handlePromotionNeeded}
         />
+        <MoveHistory moves={moves} />
       </div>
 
       {/* Promotion Dialog */}
