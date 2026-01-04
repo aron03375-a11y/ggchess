@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { Chess } from 'chess.js';
 import { Bot } from '@/types/bot';
 import { ChessBoard } from './ChessBoard';
+import { CapturedPieces } from './CapturedPieces';
 import { MoveHistory } from './MoveHistory';
 import { PromotionDialog } from './PromotionDialog';
 import { Button } from '@/components/ui/button';
@@ -194,7 +195,7 @@ export const GameScreen = ({ bot, playerColor, onBack }: GameScreenProps) => {
         </Button>
       </div>
 
-      {/* Center - Chess Board and Move History */}
+      {/* Center - Chess Board with Captured Pieces */}
       <div className="flex flex-col items-center gap-4">
         <div className="text-center">
           <p className="text-muted-foreground text-sm mb-1">
@@ -204,15 +205,21 @@ export const GameScreen = ({ bot, playerColor, onBack }: GameScreenProps) => {
             <p className="text-destructive font-semibold animate-pulse">Check!</p>
           )}
         </div>
-        <ChessBoard 
-          key={gameKey}
-          fen={fen}
-          playerColor={playerColor} 
-          onMove={handleMove}
-          disabled={isThinking}
-          lastMove={lastMove}
-          onPromotionNeeded={handlePromotionNeeded}
-        />
+        
+        {/* Board with captured pieces on sides */}
+        <div className="flex items-stretch gap-2">
+          <CapturedPieces fen={fen} playerColor={playerColor} />
+          <ChessBoard 
+            key={gameKey}
+            fen={fen}
+            playerColor={playerColor} 
+            onMove={handleMove}
+            disabled={isThinking}
+            lastMove={lastMove}
+            onPromotionNeeded={handlePromotionNeeded}
+          />
+        </div>
+        
         <MoveHistory moves={moves} />
       </div>
 
