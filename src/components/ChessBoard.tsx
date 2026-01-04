@@ -1,6 +1,12 @@
-import { useState, useCallback, useRef, forwardRef } from 'react';
+import { useState, useCallback, useRef, forwardRef, useImperativeHandle } from 'react';
 import { Chess, Square } from 'chess.js';
 import { ChessPiece } from './ChessPiece';
+import { BoardArrows } from './BoardArrows';
+
+interface Arrow {
+  from: string;
+  to: string;
+}
 
 interface ChessBoardProps {
   fen: string;
@@ -11,13 +17,25 @@ interface ChessBoardProps {
   onPromotionNeeded?: (from: string, to: string) => void;
 }
 
-export const ChessBoard = forwardRef<HTMLDivElement, ChessBoardProps>(
+export interface ChessBoardHandle {
+  clearArrows: () => void;
+}
+
+export const ChessBoard = forwardRef<ChessBoardHandle, ChessBoardProps>(
   ({ fen, playerColor, onMove, disabled = false, lastMove = null, onPromotionNeeded }, ref) => {
     const [selectedSquare, setSelectedSquare] = useState<string | null>(null);
     const [legalMoves, setLegalMoves] = useState<string[]>([]);
     const [draggedPiece, setDraggedPiece] = useState<string | null>(null);
     const [dragPosition, setDragPosition] = useState<{ x: number; y: number } | null>(null);
+    const [arrows, setArrows] = useState<Arrow[]>([]);
     const boardRef = useRef<HTMLDivElement>(null);
+
+    // Expose clearArrows method
+    useImperativeHandle(ref, () => ({
+      clearArrows: () => setArrows([]),
+    }));
+
+    const clearArrows = useCallback(() => setArrows([]), []);
 
     // Create game instance from FEN
     const game = new Chess(fen);
@@ -61,6 +79,9 @@ export const ChessBoard = forwardRef<HTMLDivElement, ChessBoardProps>(
     };
 
     const handleSquareClick = useCallback((square: string) => {
+      // Clear arrows on left click
+      clearArrows();
+      
       if (!isPlayerTurn()) return;
 
       if (selectedSquare) {
@@ -88,7 +109,7 @@ export const ChessBoard = forwardRef<HTMLDivElement, ChessBoardProps>(
         setSelectedSquare(square);
         setLegalMoves(getLegalMovesForSquare(square));
       }
-    }, [selectedSquare, legalMoves, isPlayerTurn, isPlayerPiece, getLegalMovesForSquare, onMove, isPromotionMove, onPromotionNeeded]);
+    }, [selectedSquare, legalMoves, isPlayerTurn, isPlayerPiece, getLegalMovesForSquare, onMove, isPromotionMove, onPromotionNeeded, clearArrows]);
 
     const getSquareFromPoint = useCallback((x: number, y: number): string | null => {
       if (!boardRef.current) return null;
@@ -190,7 +211,7 @@ export const ChessBoard = forwardRef<HTMLDivElement, ChessBoardProps>(
     }, [draggedPiece, legalMoves, getSquareFromPoint, onMove, isPromotionMove, onPromotionNeeded]);
 
     return (
-      <div className="relative" ref={ref}>
+      <div className="relative">
         <div 
           ref={boardRef}
           className="inline-grid grid-cols-8 rounded-lg overflow-hidden shadow-2xl border-4 border-primary/30"
@@ -258,6 +279,15 @@ export const ChessBoard = forwardRef<HTMLDivElement, ChessBoardProps>(
             })
           )}
         </div>
+
+        {/* Arrow overlay */}
+        <BoardArrows
+          boardRef={boardRef}
+          playerColor={playerColor}
+          arrows={arrows}
+          setArrows={setArrows}
+          onClearArrows={clearArrows}
+        />
 
         {/* Dragged piece overlay for touch */}
         {draggedPiece && dragPosition && (
