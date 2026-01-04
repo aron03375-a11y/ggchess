@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { Chess } from 'chess.js';
 import { Bot } from '@/types/bot';
 import { ChessBoard } from './ChessBoard';
-import { CapturedPieces } from './CapturedPieces';
+import { useCapturedPieces } from './CapturedPieces';
 import { MoveHistory } from './MoveHistory';
 import { PromotionDialog } from './PromotionDialog';
 import { Button } from '@/components/ui/button';
@@ -26,8 +26,8 @@ export const GameScreen = ({ bot, playerColor, onBack }: GameScreenProps) => {
   const isProcessingRef = useRef(false);
 
   const { getBestMove } = useStockfish({ skillLevel: bot.skillLevel, moveTime: 500 });
-
   const game = new Chess(fen);
+  const capturedPieces = useCapturedPieces({ fen, playerColor });
 
   const makeBotMove = useCallback(async (currentFen: string) => {
     if (isProcessingRef.current) return;
@@ -206,19 +206,21 @@ export const GameScreen = ({ bot, playerColor, onBack }: GameScreenProps) => {
           )}
         </div>
         
-        {/* Board with captured pieces on sides */}
-        <div className="flex items-stretch gap-2">
-          <CapturedPieces fen={fen} playerColor={playerColor} />
-          <ChessBoard 
-            key={gameKey}
-            fen={fen}
-            playerColor={playerColor} 
-            onMove={handleMove}
-            disabled={isThinking}
-            lastMove={lastMove}
-            onPromotionNeeded={handlePromotionNeeded}
-          />
-        </div>
+        {/* Captured pieces - top (opponent's captures) */}
+        {capturedPieces.top}
+        
+        <ChessBoard 
+          key={gameKey}
+          fen={fen}
+          playerColor={playerColor} 
+          onMove={handleMove}
+          disabled={isThinking}
+          lastMove={lastMove}
+          onPromotionNeeded={handlePromotionNeeded}
+        />
+        
+        {/* Captured pieces - bottom (player's captures) */}
+        {capturedPieces.bottom}
         
         <MoveHistory moves={moves} />
       </div>
