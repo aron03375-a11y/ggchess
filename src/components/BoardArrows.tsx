@@ -129,9 +129,9 @@ export const BoardArrows = ({ boardRef, playerColor, arrows, setArrows }: BoardA
     
     if (length < 5) return null;
 
-    // Arrow head size
-    const headLength = 12;
-    const headWidth = 8;
+    // Arrow head size - bigger tip
+    const headLength = 20;
+    const headWidth = 14;
     
     // Shorten the line to account for arrow head
     const ratio = (length - headLength) / length;
