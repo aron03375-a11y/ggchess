@@ -25,7 +25,7 @@ const STARTING_PIECES = {
 
 type PieceType = 'p' | 'n' | 'b' | 'r' | 'q';
 
-export const CapturedPieces = ({ fen, playerColor }: CapturedPiecesProps) => {
+export const useCapturedPieces = ({ fen, playerColor }: CapturedPiecesProps) => {
   const { whiteCaptured, blackCaptured, materialDiff } = useMemo(() => {
     const game = new Chess(fen);
     const board = game.board();
@@ -109,17 +109,16 @@ export const CapturedPieces = ({ fen, playerColor }: CapturedPiecesProps) => {
   const topAdvantage = topColor === 'w' ? (materialDiff > 0 ? materialDiff : 0) : (materialDiff < 0 ? -materialDiff : 0);
   const bottomAdvantage = bottomColor === 'w' ? (materialDiff > 0 ? materialDiff : 0) : (materialDiff < 0 ? -materialDiff : 0);
 
-  return (
-    <div className="flex flex-col justify-between h-full py-2">
-      {/* Top player's captures (opponent/bot) */}
-      <div className="min-h-6">
+  return {
+    top: (
+      <div className="min-h-6 flex items-center">
         {topCaptured.length > 0 && renderCapturedRow(topCaptured, topColor, topAdvantage)}
       </div>
-      
-      {/* Bottom player's captures (you) */}
-      <div className="min-h-6">
+    ),
+    bottom: (
+      <div className="min-h-6 flex items-center">
         {bottomCaptured.length > 0 && renderCapturedRow(bottomCaptured, bottomColor, bottomAdvantage)}
       </div>
-    </div>
-  );
+    ),
+  };
 };
