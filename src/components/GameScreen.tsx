@@ -25,7 +25,7 @@ export const GameScreen = ({ bot, playerColor, onBack }: GameScreenProps) => {
   const [pendingPromotion, setPendingPromotion] = useState<{ from: string; to: string } | null>(null);
   const isProcessingRef = useRef(false);
 
-  const { getBestMove, isReady } = useStockfish({ skillLevel: bot.skillLevel, moveTime: 500 });
+  const { getBestMove, isReady } = useStockfish({ skillLevel: bot.skillLevel, depth: bot.depth });
   const game = new Chess(fen);
   const capturedPieces = useCapturedPieces({ fen, playerColor });
 
