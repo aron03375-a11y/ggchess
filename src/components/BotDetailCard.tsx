@@ -15,10 +15,10 @@ export const BotDetailCard = ({ bot, playerColor, onColorChange, onPlay, onBack 
     <div className="bot-card-bg rounded-lg p-4 md:p-6 animate-in fade-in duration-300">
       <button
         onClick={onBack}
-        className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors mb-4"
+        className="flex items-center gap-1 text-sm font-medium text-foreground/80 hover:text-foreground transition-colors mb-4"
       >
         <ArrowLeft className="w-4 h-4" />
-        Back to bots
+        ← Back to bots
       </button>
       <div className="flex items-start gap-4 mb-6">
         <img 
