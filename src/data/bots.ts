@@ -13,7 +13,7 @@ export const aronBots: Bot[] = [
     name: 'Chill Aron',
     elo: 800,
     skillLevel: 0, // Edit this (0-20)
-    depth: 1, // Low depth for weak play
+    depth: 3, // Edit this (1-15) - higher = stronger/slower
     image: aronChill,
     greeting: "Ready for a fun game?",
     category: 'aron',
