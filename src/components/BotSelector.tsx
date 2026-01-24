@@ -30,6 +30,7 @@ export const BotSelector = ({ onStartGame }: BotSelectorProps) => {
           playerColor={playerColor}
           onColorChange={setPlayerColor}
           onPlay={handlePlay}
+          onBack={() => setSelectedBot(null)}
         />
       ) : (
         <div className="space-y-4">
