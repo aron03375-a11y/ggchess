@@ -3,6 +3,7 @@ export interface Bot {
   name: string;
   elo: number;
   skillLevel: number; // Stockfish skill level 0-20
+  depth?: number; // Optional depth limit for weaker bots
   image: string;
   greeting: string;
   category: 'aron' | 'newyear';

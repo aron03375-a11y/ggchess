@@ -3,9 +3,10 @@ import { useRef, useCallback, useEffect, useState } from 'react';
 interface UseStockfishOptions {
   skillLevel: number; // 0-20
   moveTime?: number;
+  depth?: number; // Optional depth limit
 }
 
-export const useStockfish = ({ skillLevel, moveTime = 500 }: UseStockfishOptions) => {
+export const useStockfish = ({ skillLevel, moveTime = 500, depth }: UseStockfishOptions) => {
   const workerRef = useRef<Worker | null>(null);
   const resolverRef = useRef<((move: string | null) => void) | null>(null);
   const [isReady, setIsReady] = useState(false);
@@ -88,7 +89,11 @@ export const useStockfish = ({ skillLevel, moveTime = 500 }: UseStockfishOptions
           resolverRef.current = resolve;
           console.log('Sending position to Stockfish:', fen);
           workerRef.current.postMessage(`position fen ${fen}`);
-          workerRef.current.postMessage(`go movetime ${moveTime}`);
+          // Use depth limit if provided, otherwise use movetime
+          const goCommand = depth ? `go depth ${depth}` : `go movetime ${moveTime}`;
+          console.log('Go command:', goCommand);
+          workerRef.current.postMessage(goCommand);
+          workerRef.current.postMessage(goCommand);
         } else {
           setTimeout(() => attemptMove(attempts + 1), 100);
         }
