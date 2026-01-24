@@ -25,7 +25,7 @@ export const GameScreen = ({ bot, playerColor, onBack }: GameScreenProps) => {
   const [pendingPromotion, setPendingPromotion] = useState<{ from: string; to: string } | null>(null);
   const isProcessingRef = useRef(false);
 
-  const { getBestMove } = useStockfish({ skillLevel: bot.skillLevel, moveTime: 500 });
+  const { getBestMove, isReady } = useStockfish({ skillLevel: bot.skillLevel, moveTime: 500 });
   const game = new Chess(fen);
   const capturedPieces = useCapturedPieces({ fen, playerColor });
 
@@ -72,13 +72,13 @@ export const GameScreen = ({ bot, playerColor, onBack }: GameScreenProps) => {
 
   // Bot moves first if player is black
   useEffect(() => {
-    if (playerColor === 'black' && moves.length === 0) {
+    if (playerColor === 'black' && moves.length === 0 && isReady) {
       const timer = setTimeout(() => {
         makeBotMove(fen);
-      }, 500);
+      }, 300);
       return () => clearTimeout(timer);
     }
-  }, [playerColor, gameKey]); // Only run on game start/reset
+  }, [playerColor, gameKey, isReady]); // Only run on game start/reset or when engine is ready
 
   const handleGameEnd = (g: Chess) => {
     if (g.isCheckmate()) {
