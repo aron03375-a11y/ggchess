@@ -12,7 +12,7 @@ export const aronBots: Bot[] = [
     id: 'chill-aron',
     name: 'Chill Aron',
     elo: 800,
-    skillLevel: 1, // Edit this (0-20)
+    skillLevel: 0, // Edit this (0-20)
     image: aronChill,
     greeting: "Ready for a fun game?",
     category: 'aron',
