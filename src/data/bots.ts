@@ -43,7 +43,7 @@ export const aronBots: Bot[] = [
     name: 'Madness Aron',
     elo: 2000,
     skillLevel: 9, // Edit this (0-20)
-    depth: 10,
+    depth: 7,
     image: aronMadness,
     greeting: "PREPARE FOR CHAOS!",
     category: 'aron',
@@ -56,7 +56,7 @@ export const newYearBots: Bot[] = [
     name: 'Crusher',
     elo: 1000,
     skillLevel: 2, // Edit this (0-20)
-    depth: 2,
+    depth: 3,
     image: botCrusher,
     greeting: "I'll crush your pieces!",
     category: 'newyear',
@@ -76,7 +76,7 @@ export const newYearBots: Bot[] = [
     name: 'Lover',
     elo: 1800,
     skillLevel: 7, // Edit this (0-20)
-    depth: 8,
+    depth: 6,
     image: botLover,
     greeting: "I'll win with love! ♥",
     category: 'newyear',
