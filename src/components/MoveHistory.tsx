@@ -40,14 +40,10 @@ export const MoveHistory = ({ moves, viewingIndex, onNavigate }: MoveHistoryProp
   };
 
   const handleForward = () => {
-    if (viewingIndex !== null) {
+    if (canGoForward) {
       const newIndex = currentIndex + 1;
       onNavigate(newIndex >= moves.length ? null : newIndex);
     }
-  };
-
-  const handleGoToLive = () => {
-    onNavigate(null);
   };
 
   // Calculate which move is highlighted based on viewingIndex
@@ -121,19 +117,6 @@ export const MoveHistory = ({ moves, viewingIndex, onNavigate }: MoveHistoryProp
           )}
         </div>
       </ScrollArea>
-      {viewingIndex !== null && (
-        <div className="p-2 border-t border-border bg-muted/50 flex items-center justify-between">
-          <span className="text-xs text-muted-foreground">Viewing history</span>
-          <Button
-            variant="secondary"
-            size="sm"
-            className="h-6 text-xs"
-            onClick={handleGoToLive}
-          >
-            Return to game
-          </Button>
-        </div>
-      )}
     </div>
   );
 };
