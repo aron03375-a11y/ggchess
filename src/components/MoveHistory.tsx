@@ -33,13 +33,17 @@ export const MoveHistory = ({ moves, viewingIndex, onNavigate }: MoveHistoryProp
   const canGoBack = currentIndex > 0;
   const canGoForward = viewingIndex !== null && viewingIndex < moves.length;
 
-  const handleBack = () => {
+ const handleBack = (e: React.PointerEvent) => {
+   e.preventDefault();
+   e.stopPropagation();
     if (canGoBack) {
       onNavigate(currentIndex - 1);
     }
   };
 
-  const handleForward = () => {
+ const handleForward = (e: React.PointerEvent) => {
+   e.preventDefault();
+   e.stopPropagation();
     if (canGoForward) {
       const newIndex = currentIndex + 1;
       onNavigate(newIndex >= moves.length ? null : newIndex);
@@ -63,7 +67,7 @@ export const MoveHistory = ({ moves, viewingIndex, onNavigate }: MoveHistoryProp
             variant="ghost"
             size="icon"
             className="h-7 w-7"
-            onClick={handleBack}
+           onPointerDown={handleBack}
             disabled={!canGoBack}
           >
             <ChevronLeft className="h-4 w-4" />
@@ -72,7 +76,7 @@ export const MoveHistory = ({ moves, viewingIndex, onNavigate }: MoveHistoryProp
             variant="ghost"
             size="icon"
             className="h-7 w-7"
-            onClick={handleForward}
+           onPointerDown={handleForward}
             disabled={!canGoForward}
           >
             <ChevronRight className="h-4 w-4" />
