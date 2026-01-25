@@ -31,7 +31,7 @@ export const MoveHistory = ({ moves, viewingIndex, onNavigate }: MoveHistoryProp
 
   const currentIndex = viewingIndex ?? moves.length;
   const canGoBack = currentIndex > 0;
-  const canGoForward = viewingIndex !== null && viewingIndex < moves.length;
+ const canGoForward = viewingIndex !== null;
 
  const handleBack = (e: React.PointerEvent) => {
    e.preventDefault();
@@ -44,10 +44,10 @@ export const MoveHistory = ({ moves, viewingIndex, onNavigate }: MoveHistoryProp
  const handleForward = (e: React.PointerEvent) => {
    e.preventDefault();
    e.stopPropagation();
-    if (canGoForward) {
-      const newIndex = currentIndex + 1;
-      onNavigate(newIndex >= moves.length ? null : newIndex);
-    }
+   // Always return to current position when viewing history
+   if (viewingIndex !== null) {
+     onNavigate(null);
+   }
   };
 
   // Calculate which move is highlighted based on viewingIndex
