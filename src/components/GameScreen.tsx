@@ -19,15 +19,23 @@ interface GameScreenProps {
 export const GameScreen = ({ bot, playerColor, onBack }: GameScreenProps) => {
   const [fen, setFen] = useState('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1');
   const [moves, setMoves] = useState<string[]>([]);
+  const [fenHistory, setFenHistory] = useState<string[]>(['rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1']);
+  const [moveFromTo, setMoveFromTo] = useState<{ from: string; to: string }[]>([]);
   const [isThinking, setIsThinking] = useState(false);
   const [gameKey, setGameKey] = useState(0);
   const [lastMove, setLastMove] = useState<{ from: string; to: string } | null>(null);
   const [pendingPromotion, setPendingPromotion] = useState<{ from: string; to: string } | null>(null);
+  const [viewingIndex, setViewingIndex] = useState<number | null>(null);
   const isProcessingRef = useRef(false);
 
   const { getBestMove, isReady } = useStockfish({ skillLevel: bot.skillLevel, depth: bot.depth });
-  const game = new Chess(fen);
-  const capturedPieces = useCapturedPieces({ fen, playerColor });
+  
+  // Display FEN based on viewing index
+  const displayFen = viewingIndex !== null ? fenHistory[viewingIndex + 1] : fen;
+  const displayLastMove = viewingIndex !== null ? moveFromTo[viewingIndex] : lastMove;
+  
+  const game = new Chess(displayFen);
+  const capturedPieces = useCapturedPieces({ fen: displayFen, playerColor });
 
   const makeBotMove = useCallback(async (currentFen: string) => {
     if (isProcessingRef.current) return;
@@ -53,9 +61,13 @@ export const GameScreen = ({ bot, playerColor, onBack }: GameScreenProps) => {
         
         if (move) {
           console.log('Bot played:', move.san);
-          setFen(newGame.fen());
+          const newFen = newGame.fen();
+          setFen(newFen);
           setMoves(prev => [...prev, move.san]);
+          setFenHistory(prev => [...prev, newFen]);
+          setMoveFromTo(prev => [...prev, { from, to }]);
           setLastMove({ from, to });
+          setViewingIndex(null); // Return to current position when bot moves
           
           if (newGame.isGameOver()) {
             handleGameEnd(newGame);
@@ -94,7 +106,7 @@ export const GameScreen = ({ bot, playerColor, onBack }: GameScreenProps) => {
   };
 
   const handleMove = useCallback((from: string, to: string, promotion?: 'q' | 'r' | 'b' | 'n'): boolean => {
-    if (isProcessingRef.current || isThinking) return false;
+    if (isProcessingRef.current || isThinking || viewingIndex !== null) return false;
     
     try {
       const currentGame = new Chess(fen);
@@ -116,6 +128,8 @@ export const GameScreen = ({ bot, playerColor, onBack }: GameScreenProps) => {
         const newFen = currentGame.fen();
         setFen(newFen);
         setMoves(prev => [...prev, move.san]);
+        setFenHistory(prev => [...prev, newFen]);
+        setMoveFromTo(prev => [...prev, { from, to }]);
         setLastMove({ from, to });
 
         if (currentGame.isGameOver()) {
@@ -131,7 +145,7 @@ export const GameScreen = ({ bot, playerColor, onBack }: GameScreenProps) => {
       return false;
     }
     return false;
-  }, [fen, playerColor, isThinking, makeBotMove]);
+  }, [fen, playerColor, isThinking, viewingIndex, makeBotMove]);
 
   const handlePromotionNeeded = useCallback((from: string, to: string) => {
     setPendingPromotion({ from, to });
@@ -152,11 +166,18 @@ export const GameScreen = ({ bot, playerColor, onBack }: GameScreenProps) => {
     isProcessingRef.current = false;
     setFen('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1');
     setMoves([]);
+    setFenHistory(['rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1']);
+    setMoveFromTo([]);
     setIsThinking(false);
     setLastMove(null);
     setPendingPromotion(null);
+    setViewingIndex(null);
     setGameKey(prev => prev + 1);
   };
+
+  const handleNavigate = useCallback((index: number | null) => {
+    setViewingIndex(index);
+  }, []);
 
   return (
     <div className="flex flex-col lg:flex-row gap-6 items-start justify-center w-full max-w-6xl mx-auto">
@@ -211,18 +232,18 @@ export const GameScreen = ({ bot, playerColor, onBack }: GameScreenProps) => {
         
         <ChessBoard 
           key={gameKey}
-          fen={fen}
+          fen={displayFen}
           playerColor={playerColor} 
           onMove={handleMove}
-          disabled={isThinking}
-          lastMove={lastMove}
+          disabled={isThinking || viewingIndex !== null}
+          lastMove={displayLastMove}
           onPromotionNeeded={handlePromotionNeeded}
         />
         
         {/* Captured pieces - bottom (player's captures) */}
         {capturedPieces.bottom}
         
-        <MoveHistory moves={moves} />
+        <MoveHistory moves={moves} viewingIndex={viewingIndex} onNavigate={handleNavigate} />
       </div>
 
       {/* Promotion Dialog */}
