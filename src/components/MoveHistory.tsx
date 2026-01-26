@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import type React from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -11,6 +12,7 @@ interface MoveHistoryProps {
 
 export const MoveHistory = ({ moves, viewingIndex, onNavigate }: MoveHistoryProps) => {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const touchHandledRef = useRef(false);
   
   const movePairs: { number: number; white: string; black?: string }[] = [];
   
@@ -31,23 +33,56 @@ export const MoveHistory = ({ moves, viewingIndex, onNavigate }: MoveHistoryProp
 
   const currentIndex = viewingIndex ?? moves.length;
   const canGoBack = currentIndex > 0;
- const canGoForward = viewingIndex !== null;
+  const canGoForward = viewingIndex !== null && viewingIndex < moves.length;
 
- const handleBack = (e: React.PointerEvent) => {
-   e.preventDefault();
-   e.stopPropagation();
-    if (canGoBack) {
-      onNavigate(currentIndex - 1);
-    }
+  const markTouchHandled = () => {
+    touchHandledRef.current = true;
+    // Allow the next tick to clear so subsequent clicks work normally
+    window.setTimeout(() => {
+      touchHandledRef.current = false;
+    }, 0);
   };
 
- const handleForward = (e: React.PointerEvent) => {
-   e.preventDefault();
-   e.stopPropagation();
-   // Always return to current position when viewing history
-   if (viewingIndex !== null) {
-     onNavigate(null);
-   }
+  const handleBack = () => {
+    if (canGoBack) onNavigate(currentIndex - 1);
+  };
+
+  const handleForward = () => {
+    if (!canGoForward) return;
+    const newIndex = currentIndex + 1;
+    onNavigate(newIndex >= moves.length ? null : newIndex);
+  };
+
+  const handleButtonTouchEnd = (e: React.TouchEvent, action: () => void) => {
+    markTouchHandled();
+    e.preventDefault();
+    e.stopPropagation();
+    action();
+  };
+
+  const handleButtonClick = (e: React.MouseEvent, action: () => void) => {
+    if (touchHandledRef.current) {
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+    action();
+  };
+
+  const handleMoveTouchEnd = (e: React.TouchEvent, index: number) => {
+    markTouchHandled();
+    e.preventDefault();
+    e.stopPropagation();
+    onNavigate(index);
+  };
+
+  const handleMoveClick = (e: React.MouseEvent, index: number) => {
+    if (touchHandledRef.current) {
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+    onNavigate(index);
   };
 
   // Calculate which move is highlighted based on viewingIndex
@@ -66,8 +101,9 @@ export const MoveHistory = ({ moves, viewingIndex, onNavigate }: MoveHistoryProp
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7"
-           onPointerDown={handleBack}
+            className="h-7 w-7 touch-manipulation"
+            onTouchEnd={(e) => handleButtonTouchEnd(e, handleBack)}
+            onClick={(e) => handleButtonClick(e, handleBack)}
             disabled={!canGoBack}
           >
             <ChevronLeft className="h-4 w-4" />
@@ -75,8 +111,9 @@ export const MoveHistory = ({ moves, viewingIndex, onNavigate }: MoveHistoryProp
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7"
-           onPointerDown={handleForward}
+            className="h-7 w-7 touch-manipulation"
+            onTouchEnd={(e) => handleButtonTouchEnd(e, handleForward)}
+            onClick={(e) => handleButtonClick(e, handleForward)}
             disabled={!canGoForward}
           >
             <ChevronRight className="h-4 w-4" />
@@ -99,18 +136,26 @@ export const MoveHistory = ({ moves, viewingIndex, onNavigate }: MoveHistoryProp
                   >
                     <span className="w-6 text-muted-foreground">{pair.number}.</span>
                     <span 
-                      className={`w-16 px-1 rounded cursor-pointer hover:bg-accent ${
+                      className={`w-16 px-1 rounded cursor-pointer touch-manipulation md:hover:bg-accent active:bg-accent ${
                         highlightedMove === whiteIndex ? 'bg-primary/20' : ''
                       }`}
-                      onClick={() => onNavigate(whiteIndex)}
+                      onTouchEnd={(e) => handleMoveTouchEnd(e, whiteIndex)}
+                      onClick={(e) => handleMoveClick(e, whiteIndex)}
                     >
                       {pair.white}
                     </span>
                     <span 
-                      className={`w-16 px-1 rounded cursor-pointer hover:bg-accent ${
+                      className={`w-16 px-1 rounded cursor-pointer touch-manipulation md:hover:bg-accent active:bg-accent ${
                         highlightedMove === blackIndex ? 'bg-primary/20' : ''
                       }`}
-                      onClick={() => pair.black && onNavigate(blackIndex)}
+                      onTouchEnd={(e) => {
+                        if (!pair.black) return;
+                        handleMoveTouchEnd(e, blackIndex);
+                      }}
+                      onClick={(e) => {
+                        if (!pair.black) return;
+                        handleMoveClick(e, blackIndex);
+                      }}
                     >
                       {pair.black || ''}
                     </span>
