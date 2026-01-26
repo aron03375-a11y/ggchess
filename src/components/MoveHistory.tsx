@@ -32,7 +32,9 @@ export const MoveHistory = ({ moves, viewingIndex, onNavigate }: MoveHistoryProp
   }, [moves.length, viewingIndex]);
 
   const currentIndex = viewingIndex ?? moves.length;
-  const canGoBack = currentIndex > 0;
+  // We treat `viewingIndex` as an index into the `moves` array, with one extra virtual
+  // position `-1` meaning "start position" (fenHistory[0]).
+  const canGoBack = moves.length > 0 && currentIndex > -1;
   const canGoForward = viewingIndex !== null && viewingIndex < moves.length;
 
   const markTouchHandled = () => {
@@ -44,7 +46,17 @@ export const MoveHistory = ({ moves, viewingIndex, onNavigate }: MoveHistoryProp
   };
 
   const handleBack = () => {
-    if (canGoBack) onNavigate(currentIndex - 1);
+    if (!canGoBack) return;
+
+    // From the live position (viewingIndex === null), jumping to moves.length - 1
+    // would still show the live FEN (fenHistory[moves.length]).
+    // So we jump one earlier so the first tap actually goes "back" visually.
+    if (viewingIndex === null) {
+      onNavigate(moves.length >= 2 ? moves.length - 2 : -1);
+      return;
+    }
+
+    onNavigate(currentIndex - 1);
   };
 
   const handleForward = () => {
