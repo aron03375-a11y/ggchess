@@ -43,7 +43,7 @@ export const aronBots: Bot[] = [
     name: 'Madness Aron',
     elo: 2000,
     skillLevel: 16, // Edit this (0-20)
-    depth: 8,
+    depth: 14,
     image: aronMadness,
     greeting: "PREPARE FOR CHAOS!",
     category: 'aron',
