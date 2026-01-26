@@ -55,7 +55,7 @@ export const newYearBots: Bot[] = [
     id: 'crusher',
     name: 'Crusher',
     elo: 1000,
-    skillLevel: 2, // Edit this (0-20)
+    skillLevel: 1, // Edit this (0-20)
     depth: 3,
     image: botCrusher,
     greeting: "I'll crush your pieces!",
