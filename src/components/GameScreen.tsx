@@ -176,8 +176,20 @@ export const GameScreen = ({ bot, playerColor, onBack }: GameScreenProps) => {
   };
 
   const handleNavigate = useCallback((index: number | null) => {
+    // If the selected index would display the live position (i.e. last move index),
+    // automatically exit history mode so the board is immediately playable.
+    if (index === null) {
+      setViewingIndex(null);
+      return;
+    }
+
+    if (moves.length > 0 && index === moves.length - 1) {
+      setViewingIndex(null);
+      return;
+    }
+
     setViewingIndex(index);
-  }, []);
+  }, [moves.length]);
 
   return (
     <div className="flex flex-col lg:flex-row gap-6 items-start justify-center w-full max-w-6xl mx-auto">
