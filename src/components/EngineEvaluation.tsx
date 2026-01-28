@@ -22,6 +22,21 @@ export const EngineEvaluation = ({
   onPlayMove 
 }: EngineEvaluationProps) => {
   const { bestMove, pv, evaluation, depth, isMate, mateIn } = analysis;
+  const isWhiteTurn = new Chess(fen).turn() === 'w';
+
+  // Convert single UCI move to SAN for display
+  const uciToSan = (uci: string, positionFen: string): string | null => {
+    try {
+      const game = new Chess(positionFen);
+      const from = uci.slice(0, 2);
+      const to = uci.slice(2, 4);
+      const promotion = uci.length > 4 ? uci[4] : undefined;
+      const move = game.move({ from, to, promotion });
+      return move ? move.san : null;
+    } catch {
+      return null;
+    }
+  };
 
   // Convert UCI moves to SAN for display
   const pvToSan = (uciMoves: string[], startFen: string): string[] => {
@@ -47,12 +62,21 @@ export const EngineEvaluation = ({
     return sanMoves;
   };
 
+  // Normalize evaluation to always be from White's perspective
+  // Stockfish returns eval from the side-to-move's perspective
+  const normalizedEval = evaluation !== null 
+    ? (isWhiteTurn ? evaluation : -evaluation) 
+    : null;
+  const normalizedMateIn = mateIn !== null 
+    ? (isWhiteTurn ? mateIn : -mateIn) 
+    : null;
+
   const formatEvaluation = () => {
-    if (isMate && mateIn !== null) {
-      return mateIn > 0 ? `M${mateIn}` : `-M${Math.abs(mateIn)}`;
+    if (isMate && normalizedMateIn !== null) {
+      return normalizedMateIn > 0 ? `+M${normalizedMateIn}` : `-M${Math.abs(normalizedMateIn)}`;
     }
-    if (evaluation !== null) {
-      const evalInPawns = evaluation / 100;
+    if (normalizedEval !== null) {
+      const evalInPawns = normalizedEval / 100;
       const sign = evalInPawns >= 0 ? '+' : '';
       return `${sign}${evalInPawns.toFixed(1)}`;
     }
@@ -70,8 +94,8 @@ export const EngineEvaluation = ({
   };
 
   const pvSan = pvToSan(pv, fen);
-  const isWhiteTurn = new Chess(fen).turn() === 'w';
-  const evalBar = evaluation !== null ? Math.max(-500, Math.min(500, evaluation)) : 0;
+  const bestMoveSan = bestMove ? uciToSan(bestMove, fen) : null;
+  const evalBar = normalizedEval !== null ? Math.max(-500, Math.min(500, normalizedEval)) : 0;
   const evalPercent = 50 + (evalBar / 10); // Scale to 0-100
 
   return (
@@ -99,9 +123,9 @@ export const EngineEvaluation = ({
         <div className="flex items-center justify-between mb-2">
           <span 
             className={`font-mono text-xl font-bold ${
-              (evaluation !== null && evaluation > 0) || (isMate && mateIn && mateIn > 0)
+              (normalizedEval !== null && normalizedEval > 0) || (isMate && normalizedMateIn && normalizedMateIn > 0)
                 ? 'text-white' 
-                : (evaluation !== null && evaluation < 0) || (isMate && mateIn && mateIn < 0)
+                : (normalizedEval !== null && normalizedEval < 0) || (isMate && normalizedMateIn && normalizedMateIn < 0)
                 ? 'text-zinc-400'
                 : 'text-muted-foreground'
             }`}
@@ -114,7 +138,7 @@ export const EngineEvaluation = ({
               onClick={handlePlayBestMove}
               className="px-3 py-1 bg-primary/20 hover:bg-primary/30 text-primary rounded-md text-sm font-medium transition-colors"
             >
-              Play {pvSan[0] || bestMove}
+              Play {bestMoveSan || pvSan[0] || bestMove}
             </button>
           )}
         </div>
