@@ -12,8 +12,8 @@ export const aronBots: Bot[] = [
     id: 'chill-aron',
     name: 'Chill Aron',
     elo: 800,
-    skillLevel: 17, // Edit this (0-20)
-    depth: 12, // Edit this (1-15) - higher = stronger/slower
+    skillLevel: 0, // Edit this (0-20)
+    depth: 3, // Edit this (1-15) - higher = stronger/slower
     image: aronChill,
     greeting: "Ready for a fun game?",
     category: 'aron',
