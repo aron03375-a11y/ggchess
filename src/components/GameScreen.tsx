@@ -5,9 +5,8 @@ import { ChessBoard } from './ChessBoard';
 import { useCapturedPieces } from './CapturedPieces';
 import { MoveHistory } from './MoveHistory';
 import { PromotionDialog } from './PromotionDialog';
-import { GameResultDialog } from './GameResultDialog';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, RotateCcw, Flag } from 'lucide-react';
+import { ArrowLeft, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 import { useStockfish } from '@/hooks/useStockfish';
 
@@ -27,8 +26,6 @@ export const GameScreen = ({ bot, playerColor, onBack }: GameScreenProps) => {
   const [lastMove, setLastMove] = useState<{ from: string; to: string } | null>(null);
   const [pendingPromotion, setPendingPromotion] = useState<{ from: string; to: string } | null>(null);
   const [viewingIndex, setViewingIndex] = useState<number | null>(null);
-  const [gameResult, setGameResult] = useState<'win' | 'loss' | 'draw' | null>(null);
-  const [showResultDialog, setShowResultDialog] = useState(false);
   const isProcessingRef = useRef(false);
 
   const { getBestMove, isReady } = useStockfish({ skillLevel: bot.skillLevel, depth: bot.depth });
@@ -95,25 +92,16 @@ export const GameScreen = ({ bot, playerColor, onBack }: GameScreenProps) => {
     }
   }, [playerColor, gameKey, isReady]); // Only run on game start/reset or when engine is ready
 
-  const handleGameEnd = (g: Chess, isResign = false) => {
-    if (isResign) {
-      setGameResult('loss');
-      setShowResultDialog(true);
-      toast(`You resigned. ${bot.name} wins!`);
-      return;
-    }
-    
+  const handleGameEnd = (g: Chess) => {
     if (g.isCheckmate()) {
       const winner = g.turn() === 'w' ? 'Black' : 'White';
       const playerWon = (winner === 'White' && playerColor === 'white') || 
                         (winner === 'Black' && playerColor === 'black');
-      setGameResult(playerWon ? 'win' : 'loss');
-      setShowResultDialog(true);
       toast(playerWon ? '🎉 You won!' : `${bot.name} wins!`);
-    } else if (g.isDraw() || g.isStalemate()) {
-      setGameResult('draw');
-      setShowResultDialog(true);
+    } else if (g.isDraw()) {
       toast("It's a draw!");
+    } else if (g.isStalemate()) {
+      toast('Stalemate!');
     }
   };
 
@@ -184,25 +172,7 @@ export const GameScreen = ({ bot, playerColor, onBack }: GameScreenProps) => {
     setLastMove(null);
     setPendingPromotion(null);
     setViewingIndex(null);
-    setGameResult(null);
-    setShowResultDialog(false);
     setGameKey(prev => prev + 1);
-  };
-
-  const handleResign = () => {
-    handleGameEnd(game, true);
-  };
-
-  // Generate PGN from moves
-  const getPgn = () => {
-    const tempGame = new Chess();
-    for (let i = 0; i < moves.length; i++) {
-      const moveFromToData = moveFromTo[i];
-      if (moveFromToData) {
-        tempGame.move({ from: moveFromToData.from, to: moveFromToData.to });
-      }
-    }
-    return tempGame.pgn();
   };
 
   const handleNavigate = useCallback((index: number | null) => {
@@ -256,16 +226,6 @@ export const GameScreen = ({ bot, playerColor, onBack }: GameScreenProps) => {
           <RotateCcw size={18} />
           New Game
         </Button>
-
-        <Button 
-          variant="destructive" 
-          onClick={handleResign}
-          disabled={moves.length === 0 || game.isGameOver()}
-          className="flex items-center gap-2"
-        >
-          <Flag size={18} />
-          Resign
-        </Button>
       </div>
 
       {/* Center - Chess Board with Captured Pieces */}
@@ -304,17 +264,6 @@ export const GameScreen = ({ bot, playerColor, onBack }: GameScreenProps) => {
         color={playerColor === 'white' ? 'w' : 'b'}
         onSelect={handlePromotionSelect}
         onCancel={handlePromotionCancel}
-      />
-
-      {/* Game Result Dialog */}
-      <GameResultDialog
-        isOpen={showResultDialog}
-        result={gameResult}
-        botName={bot.name}
-        pgn={getPgn()}
-        fenHistory={fenHistory}
-        onNewGame={handleReset}
-        onClose={() => setShowResultDialog(false)}
       />
     </div>
   );
