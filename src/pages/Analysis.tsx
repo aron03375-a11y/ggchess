@@ -1,18 +1,24 @@
 import { useState, useCallback, useEffect } from 'react';
 import { Chess } from 'chess.js';
+import { useLocation } from 'react-router-dom';
 import { AnalysisChessBoard } from '@/components/AnalysisChessBoard';
-import { MoveHistory } from '@/components/MoveHistory';
+import { MoveHistoryWithAccuracy } from '@/components/MoveHistoryWithAccuracy';
 import { EngineEvaluation } from '@/components/EngineEvaluation';
 import { PromotionDialog } from '@/components/PromotionDialog';
 import { useCapturedPieces } from '@/components/CapturedPieces';
 import { useStockfishAnalysis } from '@/hooks/useStockfishAnalysis';
+import { useMoveAccuracy } from '@/hooks/useMoveAccuracy';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, RotateCcw, FlipVertical } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+import { ArrowLeft, RotateCcw, FlipVertical, Search } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const INITIAL_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 
 const Analysis = () => {
+  const location = useLocation();
+  const gameData = location.state as { pgn?: string; fenHistory?: string[]; fromGame?: boolean } | null;
+
   const [fen, setFen] = useState(INITIAL_FEN);
   const [moves, setMoves] = useState<string[]>([]);
   const [fenHistory, setFenHistory] = useState<string[]>([INITIAL_FEN]);
@@ -23,12 +29,56 @@ const Analysis = () => {
   const [orientation, setOrientation] = useState<'white' | 'black'>('white');
 
   const { analysis, isReady, isAnalyzing, startAnalysis } = useStockfishAnalysis({ thinkTime: 3000 });
+  const { accuracyMarkers, isAnalyzing: isAnalyzingAccuracy, progress, analyzeGame } = useMoveAccuracy({ 
+    fenHistory, 
+    moves 
+  });
   
   const displayFen = viewingIndex !== null ? fenHistory[viewingIndex + 1] : fen;
   const displayLastMove = viewingIndex !== null ? moveFromTo[viewingIndex] : lastMove;
   
   const game = new Chess(displayFen);
   const capturedPieces = useCapturedPieces({ fen: displayFen, playerColor: orientation });
+
+  // Load game from navigation state
+  useEffect(() => {
+    if (gameData?.fromGame && gameData.fenHistory && gameData.fenHistory.length > 1) {
+      // Reconstruct moves from FEN history
+      const loadedMoves: string[] = [];
+      const loadedMoveFromTo: { from: string; to: string }[] = [];
+      
+      for (let i = 0; i < gameData.fenHistory.length - 1; i++) {
+        try {
+          const beforeGame = new Chess(gameData.fenHistory[i]);
+          const afterGame = new Chess(gameData.fenHistory[i + 1]);
+          
+          // Find the move by comparing positions
+          const legalMoves = beforeGame.moves({ verbose: true });
+          for (const move of legalMoves) {
+            beforeGame.move(move);
+            if (beforeGame.fen() === afterGame.fen()) {
+              loadedMoves.push(move.san);
+              loadedMoveFromTo.push({ from: move.from, to: move.to });
+              break;
+            }
+            beforeGame.undo();
+          }
+        } catch {
+          break;
+        }
+      }
+      
+      setFenHistory(gameData.fenHistory);
+      setMoves(loadedMoves);
+      setMoveFromTo(loadedMoveFromTo);
+      setFen(gameData.fenHistory[gameData.fenHistory.length - 1]);
+      if (loadedMoveFromTo.length > 0) {
+        setLastMove(loadedMoveFromTo[loadedMoveFromTo.length - 1]);
+      }
+      // Start at the beginning to review the game
+      setViewingIndex(-1);
+    }
+  }, []);
 
   // Start analysis when position changes
   useEffect(() => {
@@ -169,6 +219,31 @@ const Analysis = () => {
             Flip Board
           </Button>
 
+          {/* Analyze Accuracy Button */}
+          {moves.length > 0 && (
+            <div className="space-y-2">
+              <Button 
+                variant="default" 
+                onClick={analyzeGame}
+                disabled={isAnalyzingAccuracy}
+                className="flex items-center gap-2 w-full"
+              >
+                <Search size={18} />
+                {isAnalyzingAccuracy ? 'Analyzing...' : 'Analyze Accuracy'}
+              </Button>
+              {isAnalyzingAccuracy && (
+                <Progress value={progress} className="h-2" />
+              )}
+              {accuracyMarkers.length > 0 && !isAnalyzingAccuracy && (
+                <div className="text-xs text-muted-foreground space-y-1">
+                  <p className="text-yellow-500">?! Inaccuracies: {accuracyMarkers.filter(m => m.type === 'inaccuracy').length}</p>
+                  <p className="text-orange-500">? Mistakes: {accuracyMarkers.filter(m => m.type === 'mistake').length}</p>
+                  <p className="text-red-500">?? Blunders: {accuracyMarkers.filter(m => m.type === 'blunder').length}</p>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Engine Evaluation */}
           <EngineEvaluation 
             analysis={analysis}
@@ -208,7 +283,12 @@ const Analysis = () => {
           
           {capturedPieces.bottom}
           
-          <MoveHistory moves={moves} viewingIndex={viewingIndex} onNavigate={handleNavigate} />
+          <MoveHistoryWithAccuracy 
+            moves={moves} 
+            viewingIndex={viewingIndex} 
+            onNavigate={handleNavigate}
+            accuracyMarkers={accuracyMarkers}
+          />
         </div>
 
         <PromotionDialog
