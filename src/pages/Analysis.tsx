@@ -7,10 +7,9 @@ import { EngineEvaluation } from '@/components/EngineEvaluation';
 import { PromotionDialog } from '@/components/PromotionDialog';
 import { useCapturedPieces } from '@/components/CapturedPieces';
 import { useStockfishAnalysis } from '@/hooks/useStockfishAnalysis';
-import { useMoveAccuracy } from '@/hooks/useMoveAccuracy';
+import { useRealTimeAccuracy } from '@/hooks/useRealTimeAccuracy';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
-import { ArrowLeft, RotateCcw, FlipVertical, Search } from 'lucide-react';
+import { ArrowLeft, RotateCcw, FlipVertical } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const INITIAL_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
@@ -29,10 +28,7 @@ const Analysis = () => {
   const [orientation, setOrientation] = useState<'white' | 'black'>('white');
 
   const { analysis, isReady, isAnalyzing, startAnalysis } = useStockfishAnalysis({ thinkTime: 3000 });
-  const { accuracyMarkers, isAnalyzing: isAnalyzingAccuracy, progress, analyzeGame } = useMoveAccuracy({ 
-    fenHistory, 
-    moves 
-  });
+  const { accuracyMarkers, processEvaluation, reset: resetAccuracy } = useRealTimeAccuracy();
   
   const displayFen = viewingIndex !== null ? fenHistory[viewingIndex + 1] : fen;
   const displayLastMove = viewingIndex !== null ? moveFromTo[viewingIndex] : lastMove;
@@ -86,6 +82,21 @@ const Analysis = () => {
       startAnalysis(displayFen);
     }
   }, [displayFen, isReady, startAnalysis]);
+
+  // Process evaluation for real-time accuracy marking
+  useEffect(() => {
+    if (analysis.depth >= 12 && viewingIndex === null) {
+      const game = new Chess(displayFen);
+      processEvaluation({
+        evaluation: analysis.evaluation,
+        isMate: analysis.isMate,
+        mateIn: analysis.mateIn,
+        currentMoveIndex: moves.length,
+        isWhiteTurn: game.turn() === 'w',
+        depth: analysis.depth,
+      });
+    }
+  }, [analysis.evaluation, analysis.depth, analysis.isMate, analysis.mateIn, moves.length, displayFen, viewingIndex, processEvaluation]);
 
   const handleMove = useCallback((from: string, to: string, promotion?: 'q' | 'r' | 'b' | 'n'): boolean => {
     if (viewingIndex !== null) {
@@ -162,6 +173,7 @@ const Analysis = () => {
     setLastMove(null);
     setPendingPromotion(null);
     setViewingIndex(null);
+    resetAccuracy();
   };
 
   const handleNavigate = useCallback((index: number | null) => {
@@ -219,28 +231,13 @@ const Analysis = () => {
             Flip Board
           </Button>
 
-          {/* Analyze Accuracy Button */}
-          {moves.length > 0 && (
-            <div className="space-y-2">
-              <Button 
-                variant="default" 
-                onClick={analyzeGame}
-                disabled={isAnalyzingAccuracy}
-                className="flex items-center gap-2 w-full"
-              >
-                <Search size={18} />
-                {isAnalyzingAccuracy ? 'Analyzing...' : 'Analyze Accuracy'}
-              </Button>
-              {isAnalyzingAccuracy && (
-                <Progress value={progress} className="h-2" />
-              )}
-              {accuracyMarkers.length > 0 && !isAnalyzingAccuracy && (
-                <div className="text-xs text-muted-foreground space-y-1">
-                  <p className="text-yellow-500">?! Inaccuracies: {accuracyMarkers.filter(m => m.type === 'inaccuracy').length}</p>
-                  <p className="text-orange-500">? Mistakes: {accuracyMarkers.filter(m => m.type === 'mistake').length}</p>
-                  <p className="text-red-500">?? Blunders: {accuracyMarkers.filter(m => m.type === 'blunder').length}</p>
-                </div>
-              )}
+          {/* Accuracy Summary */}
+          {accuracyMarkers.length > 0 && (
+            <div className="bg-card rounded-lg p-3 space-y-1">
+              <h3 className="font-fredoka text-sm text-card-foreground mb-2">Move Accuracy</h3>
+              <p className="text-xs text-yellow-500">?! Inaccuracies: {accuracyMarkers.filter(m => m.type === 'inaccuracy').length}</p>
+              <p className="text-xs text-orange-500">? Mistakes: {accuracyMarkers.filter(m => m.type === 'mistake').length}</p>
+              <p className="text-xs text-red-500">?? Blunders: {accuracyMarkers.filter(m => m.type === 'blunder').length}</p>
             </div>
           )}
 
