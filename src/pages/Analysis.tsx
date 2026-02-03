@@ -85,16 +85,15 @@ const Analysis = () => {
 
   // Process evaluation for real-time accuracy marking
   useEffect(() => {
-    if (analysis.depth >= 12 && viewingIndex === null) {
+    if (viewingIndex === null) {
       const game = new Chess(displayFen);
       processEvaluation({
         evaluation: analysis.evaluation,
         isMate: analysis.isMate,
         mateIn: analysis.mateIn,
-        currentMoveIndex: moves.length,
         isWhiteTurn: game.turn() === 'w',
         depth: analysis.depth,
-      });
+      }, moves.length);
     }
   }, [analysis.evaluation, analysis.depth, analysis.isMate, analysis.mateIn, moves.length, displayFen, viewingIndex, processEvaluation]);
 

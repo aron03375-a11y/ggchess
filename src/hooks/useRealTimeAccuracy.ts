@@ -6,104 +6,106 @@ const INACCURACY_THRESHOLD = 100; // 1.0 pawns
 const MISTAKE_THRESHOLD = 150;    // 1.5 pawns  
 const BLUNDER_THRESHOLD = 300;    // 3.0 pawns
 
-interface UseRealTimeAccuracyOptions {
+interface EvaluationData {
   evaluation: number | null;
   isMate: boolean;
   mateIn: number | null;
-  currentMoveIndex: number;
   isWhiteTurn: boolean;
   depth: number;
 }
 
 export const useRealTimeAccuracy = () => {
   const [accuracyMarkers, setAccuracyMarkers] = useState<MoveAccuracy[]>([]);
-  const previousEvalRef = useRef<{ eval: number; moveIndex: number; depth: number } | null>(null);
+  
+  // Store the last stable evaluation before a move was made
+  const lastStableEvalRef = useRef<{ eval: number; moveIndex: number } | null>(null);
+  // Track which moves we've already marked
   const markedMovesRef = useRef<Set<number>>(new Set());
-  const stableEvalTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const currentEvalRef = useRef<{ eval: number; depth: number } | null>(null);
+  // Track the current move count to detect when a move is made
+  const lastMoveCountRef = useRef<number>(0);
+  // Track if we're waiting to mark a move (after 3s of thinking)
+  const pendingMarkRef = useRef<{ moveIndex: number; evalBefore: number; timeout: NodeJS.Timeout } | null>(null);
+  // Store the latest evaluation as it comes in
+  const currentEvalRef = useRef<number | null>(null);
 
   const reset = useCallback(() => {
     setAccuracyMarkers([]);
-    previousEvalRef.current = null;
+    lastStableEvalRef.current = null;
     markedMovesRef.current = new Set();
+    lastMoveCountRef.current = 0;
     currentEvalRef.current = null;
-    if (stableEvalTimeoutRef.current) {
-      clearTimeout(stableEvalTimeoutRef.current);
-      stableEvalTimeoutRef.current = null;
+    if (pendingMarkRef.current) {
+      clearTimeout(pendingMarkRef.current.timeout);
+      pendingMarkRef.current = null;
     }
   }, []);
 
-  const processEvaluation = useCallback(({
-    evaluation,
-    isMate,
-    mateIn,
-    currentMoveIndex,
-    isWhiteTurn,
-    depth,
-  }: UseRealTimeAccuracyOptions) => {
-    // Calculate normalized evaluation (always from White's perspective)
-    let normalizedEval: number;
-    if (isMate && mateIn !== null) {
-      normalizedEval = isWhiteTurn
-        ? (mateIn > 0 ? 10000 : -10000)
-        : (mateIn > 0 ? -10000 : 10000);
-    } else if (evaluation !== null) {
-      normalizedEval = isWhiteTurn ? evaluation : -evaluation;
-    } else {
-      return;
+  const normalizeEval = (data: EvaluationData): number | null => {
+    if (data.isMate && data.mateIn !== null) {
+      return data.isWhiteTurn
+        ? (data.mateIn > 0 ? 10000 : -10000)
+        : (data.mateIn > 0 ? -10000 : 10000);
     }
-
-    // Store current eval
-    currentEvalRef.current = { eval: normalizedEval, depth };
-
-    // Clear any pending timeout
-    if (stableEvalTimeoutRef.current) {
-      clearTimeout(stableEvalTimeoutRef.current);
+    if (data.evaluation !== null) {
+      return data.isWhiteTurn ? data.evaluation : -data.evaluation;
     }
+    return null;
+  };
 
-    // Wait 3 seconds for evaluation to stabilize before marking
-    stableEvalTimeoutRef.current = setTimeout(() => {
-      if (!currentEvalRef.current || depth < 12) return;
+  const processEvaluation = useCallback((
+    data: EvaluationData,
+    currentMoveIndex: number
+  ) => {
+    const normalizedEval = normalizeEval(data);
+    if (normalizedEval === null) return;
 
-      const stableEval = currentEvalRef.current.eval;
+    // Always update current eval
+    currentEvalRef.current = normalizedEval;
 
-      // If we have a previous evaluation and this is a new move
-      if (previousEvalRef.current && currentMoveIndex > previousEvalRef.current.moveIndex) {
-        const moveJustPlayed = currentMoveIndex - 1;
+    // Detect when a new move was made
+    if (currentMoveIndex > lastMoveCountRef.current) {
+      const moveJustPlayed = currentMoveIndex - 1;
+      
+      // If we have a stable evaluation from before the move
+      if (lastStableEvalRef.current && !markedMovesRef.current.has(moveJustPlayed)) {
+        const evalBefore = lastStableEvalRef.current.eval;
         
-        // Don't mark the same move twice
-        if (!markedMovesRef.current.has(moveJustPlayed)) {
-          const evalBefore = previousEvalRef.current.eval;
-          const evalAfter = stableEval;
+        // Clear any existing pending mark
+        if (pendingMarkRef.current) {
+          clearTimeout(pendingMarkRef.current.timeout);
+        }
+        
+        // Set up a 3-second timer to mark the move after engine stabilizes
+        const timeout = setTimeout(() => {
+          if (currentEvalRef.current === null) return;
           
-          // The move was made by the player whose turn it WAS (before the move)
-          // At currentMoveIndex, it's the opponent's turn, so the previous player moved
+          const evalAfter = currentEvalRef.current;
+          
+          // The move was made by the player whose turn it WAS before the move
           // Move index 0 = White's first move, index 1 = Black's first move, etc.
           const wasWhiteMove = moveJustPlayed % 2 === 0;
           
           // Calculate evaluation loss from the perspective of the moving player
-          // For White: positive eval is good, so loss = evalBefore - evalAfter
-          // For Black: negative eval is good, so loss = evalAfter - evalBefore
           const evalLoss = wasWhiteMove 
             ? evalBefore - evalAfter
             : evalAfter - evalBefore;
 
           // Only mark if there's a significant loss
-          if (evalLoss >= BLUNDER_THRESHOLD) {
+          if (evalLoss >= BLUNDER_THRESHOLD && !markedMovesRef.current.has(moveJustPlayed)) {
             markedMovesRef.current.add(moveJustPlayed);
             setAccuracyMarkers(prev => [...prev, {
               index: moveJustPlayed,
               type: 'blunder',
               evalLoss: evalLoss / 100,
             }]);
-          } else if (evalLoss >= MISTAKE_THRESHOLD) {
+          } else if (evalLoss >= MISTAKE_THRESHOLD && !markedMovesRef.current.has(moveJustPlayed)) {
             markedMovesRef.current.add(moveJustPlayed);
             setAccuracyMarkers(prev => [...prev, {
               index: moveJustPlayed,
               type: 'mistake',
               evalLoss: evalLoss / 100,
             }]);
-          } else if (evalLoss >= INACCURACY_THRESHOLD) {
+          } else if (evalLoss >= INACCURACY_THRESHOLD && !markedMovesRef.current.has(moveJustPlayed)) {
             markedMovesRef.current.add(moveJustPlayed);
             setAccuracyMarkers(prev => [...prev, {
               index: moveJustPlayed,
@@ -111,23 +113,29 @@ export const useRealTimeAccuracy = () => {
               evalLoss: evalLoss / 100,
             }]);
           }
-        }
+          
+          // Update the stable eval for the next move comparison
+          lastStableEvalRef.current = { eval: currentEvalRef.current, moveIndex: currentMoveIndex };
+          pendingMarkRef.current = null;
+        }, 3000);
+        
+        pendingMarkRef.current = { moveIndex: moveJustPlayed, evalBefore, timeout };
       }
-
-      // Store this evaluation for the next move comparison
-      previousEvalRef.current = {
-        eval: stableEval,
-        moveIndex: currentMoveIndex,
-        depth: currentEvalRef.current.depth,
-      };
-    }, 3000);
+      
+      lastMoveCountRef.current = currentMoveIndex;
+    }
+    
+    // Store stable evaluation when depth is high enough and no move is pending
+    if (data.depth >= 15 && !pendingMarkRef.current) {
+      lastStableEvalRef.current = { eval: normalizedEval, moveIndex: currentMoveIndex };
+    }
   }, []);
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (stableEvalTimeoutRef.current) {
-        clearTimeout(stableEvalTimeoutRef.current);
+      if (pendingMarkRef.current) {
+        clearTimeout(pendingMarkRef.current.timeout);
       }
     };
   }, []);
