@@ -63,51 +63,56 @@ export const useMoveAccuracy = ({ fenHistory, moves }: UseMoveAccuracyOptions) =
         return;
       }
 
+      let lastEval: number | null = null;
+      const isWhiteTurn = game.turn() === 'w';
+
       const handleMessage = (event: MessageEvent) => {
         const message = event.data;
         
         if (typeof message === 'string') {
-          // Look for the final evaluation in the bestmove response
-          if (message.startsWith('info') && message.includes('score cp')) {
-            const match = message.match(/score cp (-?\d+)/);
-            if (match) {
-              const eval_ = parseInt(match[1], 10);
-              // Stockfish returns eval from side-to-move perspective
-              // Normalize to White's perspective
-              const isWhiteTurn = game.turn() === 'w';
-              const normalizedEval = isWhiteTurn ? eval_ : -eval_;
-              stockfish.removeEventListener('message', handleMessage);
-              resolve(normalizedEval);
-            }
-          } else if (message.startsWith('info') && message.includes('score mate')) {
-            const match = message.match(/score mate (-?\d+)/);
-            if (match) {
-              const mateIn = parseInt(match[1], 10);
-              const isWhiteTurn = game.turn() === 'w';
-              // Large value for mate
-              const normalizedEval = isWhiteTurn 
-                ? (mateIn > 0 ? 10000 : -10000)
-                : (mateIn > 0 ? -10000 : 10000);
-              stockfish.removeEventListener('message', handleMessage);
-              resolve(normalizedEval);
+          // Capture running evaluations at higher depths
+          if (message.startsWith('info') && message.includes('depth')) {
+            const depthMatch = message.match(/depth (\d+)/);
+            const depth = depthMatch ? parseInt(depthMatch[1], 10) : 0;
+            
+            // Only capture evaluations at reasonable depth
+            if (depth >= 10) {
+              if (message.includes('score cp')) {
+                const match = message.match(/score cp (-?\d+)/);
+                if (match) {
+                  const eval_ = parseInt(match[1], 10);
+                  // Normalize to White's perspective
+                  lastEval = isWhiteTurn ? eval_ : -eval_;
+                }
+              } else if (message.includes('score mate')) {
+                const match = message.match(/score mate (-?\d+)/);
+                if (match) {
+                  const mateIn = parseInt(match[1], 10);
+                  // Positive mateIn = side to move can deliver mate (good for them)
+                  // Negative mateIn = side to move gets mated (bad for them)
+                  lastEval = isWhiteTurn 
+                    ? (mateIn > 0 ? 10000 : -10000)
+                    : (mateIn > 0 ? -10000 : 10000);
+                }
+              }
             }
           } else if (message.startsWith('bestmove')) {
-            // If we get bestmove without finding eval, use last known
             stockfish.removeEventListener('message', handleMessage);
-            resolve(null);
+            resolve(lastEval);
           }
         }
       };
 
       stockfish.addEventListener('message', handleMessage);
       stockfish.postMessage(`position fen ${fen}`);
-      stockfish.postMessage('go depth 12');
+      stockfish.postMessage('go depth 18'); // Deeper search for more accurate evals
       
-      // Timeout after 5 seconds
+      // Timeout after 8 seconds
       setTimeout(() => {
         stockfish.removeEventListener('message', handleMessage);
-        resolve(null);
-      }, 5000);
+        stockfish.postMessage('stop');
+        resolve(lastEval);
+      }, 8000);
     });
   }, []);
 

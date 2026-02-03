@@ -2,9 +2,10 @@ import aronChill from '@/assets/aron-chill.png';
 import aronFocused from '@/assets/aron-focused.png';
 import aronCompetitive from '@/assets/aron-competitive.png';
 import aronMadness from '@/assets/aron-madness.png';
-import botCrusher from '@/assets/bot-crusher.png';
-import botHealer from '@/assets/bot-healer.png';
-import botLover from '@/assets/bot-lover.png';
+import hikaruSleepy from '@/assets/hikaru-sleepy.png';
+import hikaruSoccer from '@/assets/hikaru-soccer.png';
+import hikaruChef from '@/assets/hikaru-chef.png';
+import hikaruStreamer from '@/assets/hikaru-streamer.png';
 import { Bot } from '@/types/bot';
 
 export const aronBots: Bot[] = [
@@ -50,37 +51,47 @@ export const aronBots: Bot[] = [
   },
 ];
 
-export const newYearBots: Bot[] = [
+export const hikaruBots: Bot[] = [
   {
-    id: 'crusher',
-    name: 'Crusher',
+    id: 'sleepy-hikaru',
+    name: 'Sleepy Hikaru',
     elo: 1000,
-    skillLevel: 1, // Edit this (0-20)
+    skillLevel: 1,
     depth: 3,
-    image: botCrusher,
-    greeting: "I'll crush your pieces!",
-    category: 'newyear',
+    image: hikaruSleepy,
+    greeting: "*yawn* Let's play... I guess...",
+    category: 'hikaru',
   },
   {
-    id: 'healer',
-    name: 'Healer',
+    id: 'soccer-hikaru',
+    name: 'Soccer Hikaru',
     elo: 1400,
-    skillLevel: 4, // Edit this (0-20)
+    skillLevel: 4,
     depth: 4,
-    image: botHealer,
-    greeting: "Let's have a gentle match!",
-    category: 'newyear',
+    image: hikaruSoccer,
+    greeting: "Time to score some checkmates!",
+    category: 'hikaru',
   },
   {
-    id: 'lover',
-    name: 'Lover',
+    id: 'chef-hikaru',
+    name: 'Chef Hikaru',
     elo: 1800,
-    skillLevel: 7, // Edit this (0-20)
+    skillLevel: 7,
     depth: 6,
-    image: botLover,
-    greeting: "I'll win with love! ♥",
-    category: 'newyear',
+    image: hikaruChef,
+    greeting: "I'm cooking up a tasty attack!",
+    category: 'hikaru',
+  },
+  {
+    id: 'streamer-hikaru',
+    name: 'Streamer Hikaru',
+    elo: 2800,
+    skillLevel: 20,
+    depth: 15,
+    image: hikaruStreamer,
+    greeting: "Chat, let's destroy this guy!",
+    category: 'hikaru',
   },
 ];
 
-export const allBots = [...aronBots, ...newYearBots];
+export const allBots = [...aronBots, ...hikaruBots];
