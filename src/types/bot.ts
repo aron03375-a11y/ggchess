@@ -6,7 +6,7 @@ export interface Bot {
   depth?: number; // Optional depth limit for weaker bots
   image: string;
   greeting: string;
-  category: 'aron' | 'newyear';
+  category: 'aron' | 'hikaru';
 }
 
 export interface GameState {

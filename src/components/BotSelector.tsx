@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Bot } from '@/types/bot';
-import { aronBots, newYearBots } from '@/data/bots';
+import { aronBots, hikaruBots } from '@/data/bots';
 import { BotAvatar } from './BotAvatar';
 import { BotDetailCard } from './BotDetailCard';
 
@@ -49,11 +49,11 @@ export const BotSelector = ({ onStartGame }: BotSelectorProps) => {
             </div>
           </div>
 
-          {/* New Year Bots */}
+          {/* Hikaru Moods */}
           <div className="bot-card-bg rounded-lg p-4">
-            <h3 className="text-center font-nunito font-medium text-sm mb-3">New year bots</h3>
+            <h3 className="text-center font-nunito font-medium text-sm mb-3">Hikaru moods</h3>
             <div className="flex justify-center gap-3 flex-wrap">
-              {newYearBots.map((bot) => (
+              {hikaruBots.map((bot) => (
                 <BotAvatar
                   key={bot.id}
                   bot={bot}
