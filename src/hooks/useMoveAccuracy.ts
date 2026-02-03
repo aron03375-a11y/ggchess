@@ -19,19 +19,28 @@ export const useMoveAccuracy = ({ fenHistory, moves }: UseMoveAccuracyOptions) =
   const stockfishRef = useRef<Worker | null>(null);
   const evaluationsRef = useRef<Map<number, number>>(new Map());
 
-  // Initialize Stockfish
+  // Initialize Stockfish using blob-based worker to bypass CORS
   useEffect(() => {
-    const stockfish = new Worker(
-      'https://cdn.jsdelivr.net/npm/stockfish@10.0.2/stockfish.js'
-    );
+    const workerCode = `
+      importScripts('https://cdn.jsdelivr.net/npm/stockfish.js@10.0.2/stockfish.js');
+    `;
     
-    stockfishRef.current = stockfish;
-    stockfish.postMessage('uci');
-    stockfish.postMessage('isready');
-    
-    return () => {
-      stockfish.terminate();
-    };
+    try {
+      const blob = new Blob([workerCode], { type: 'application/javascript' });
+      const workerUrl = URL.createObjectURL(blob);
+      const stockfish = new Worker(workerUrl);
+      URL.revokeObjectURL(workerUrl);
+      
+      stockfishRef.current = stockfish;
+      stockfish.postMessage('uci');
+      stockfish.postMessage('isready');
+      
+      return () => {
+        stockfish.terminate();
+      };
+    } catch (e) {
+      console.error('Failed to create Stockfish worker:', e);
+    }
   }, []);
 
   const evaluatePosition = useCallback((fen: string): Promise<number | null> => {
