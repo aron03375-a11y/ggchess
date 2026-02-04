@@ -196,10 +196,11 @@ export const GameScreen = ({ bot, playerColor, onBack }: GameScreenProps) => {
   // Generate PGN from moves
   const getPgn = () => {
     const tempGame = new Chess();
-    for (let i = 0; i < moves.length; i++) {
-      const moveFromToData = moveFromTo[i];
-      if (moveFromToData) {
-        tempGame.move({ from: moveFromToData.from, to: moveFromToData.to });
+    for (const san of moves) {
+      try {
+        tempGame.move(san);
+      } catch {
+        break;
       }
     }
     return tempGame.pgn();
