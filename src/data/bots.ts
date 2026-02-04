@@ -87,7 +87,7 @@ export const hikaruBots: Bot[] = [
     name: 'Streamer Hikaru',
     elo: 2800,
     skillLevel: 18,
-    depth: 12,
+    depth: 10,
     image: hikaruStreamer,
     greeting: "Chat, let's destroy this guy!",
     category: 'hikaru',
