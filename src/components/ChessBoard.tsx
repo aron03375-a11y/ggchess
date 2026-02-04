@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, forwardRef, useImperativeHandle } from 'react';
+import { useState, useCallback, useRef, forwardRef, useImperativeHandle, useEffect, useMemo } from 'react';
 import { Chess, Square } from 'chess.js';
 import { ChessPiece } from './ChessPiece';
 import { BoardArrows } from './BoardArrows';
@@ -6,6 +6,14 @@ import { BoardArrows } from './BoardArrows';
 interface Arrow {
   from: string;
   to: string;
+}
+
+interface AnimatingPiece {
+  piece: string;
+  color: 'w' | 'b';
+  from: string;
+  to: string;
+  key: number;
 }
 
 interface ChessBoardProps {
@@ -28,7 +36,11 @@ export const ChessBoard = forwardRef<ChessBoardHandle, ChessBoardProps>(
     const [draggedPiece, setDraggedPiece] = useState<string | null>(null);
     const [dragPosition, setDragPosition] = useState<{ x: number; y: number } | null>(null);
     const [arrows, setArrows] = useState<Arrow[]>([]);
+    const [animatingPiece, setAnimatingPiece] = useState<AnimatingPiece | null>(null);
+    const [animationOffset, setAnimationOffset] = useState<{ x: number; y: number } | null>(null);
     const boardRef = useRef<HTMLDivElement>(null);
+    const prevLastMoveRef = useRef<{ from: string; to: string } | null>(null);
+    const animationKeyRef = useRef(0);
 
     // Expose clearArrows method
     useImperativeHandle(ref, () => ({
@@ -46,6 +58,55 @@ export const ChessBoard = forwardRef<ChessBoardHandle, ChessBoardProps>(
     // Flip board if player is black
     const displayFiles = playerColor === 'black' ? [...files].reverse() : files;
     const displayRanks = playerColor === 'black' ? [...ranks].reverse() : ranks;
+
+    // Calculate square position based on board orientation
+    const getSquarePosition = useCallback((square: string): { col: number; row: number } => {
+      const file = square[0];
+      const rank = square[1];
+      const col = displayFiles.indexOf(file);
+      const row = displayRanks.indexOf(rank);
+      return { col, row };
+    }, [displayFiles, displayRanks]);
+
+    // Handle move animation when lastMove changes
+    useEffect(() => {
+      if (lastMove && (!prevLastMoveRef.current || 
+          lastMove.from !== prevLastMoveRef.current.from || 
+          lastMove.to !== prevLastMoveRef.current.to)) {
+        
+        // Get the piece that just moved (it's now at the 'to' square)
+        const piece = game.get(lastMove.to as Square);
+        
+        if (piece) {
+          const fromPos = getSquarePosition(lastMove.from);
+          const toPos = getSquarePosition(lastMove.to);
+          
+          // Calculate the offset (where to start the animation from)
+          const offsetX = fromPos.col - toPos.col;
+          const offsetY = fromPos.row - toPos.row;
+          
+          animationKeyRef.current += 1;
+          setAnimatingPiece({
+            piece: piece.type,
+            color: piece.color,
+            from: lastMove.from,
+            to: lastMove.to,
+            key: animationKeyRef.current,
+          });
+          setAnimationOffset({ x: offsetX, y: offsetY });
+          
+          // Clear the animation after it completes
+          const timer = setTimeout(() => {
+            setAnimatingPiece(null);
+            setAnimationOffset(null);
+          }, 150);
+          
+          prevLastMoveRef.current = lastMove;
+          return () => clearTimeout(timer);
+        }
+      }
+      prevLastMoveRef.current = lastMove;
+    }, [lastMove, fen, getSquarePosition]);
 
     const isPlayerPiece = useCallback((square: string) => {
       const piece = game.get(square as Square);
@@ -226,6 +287,7 @@ export const ChessBoard = forwardRef<ChessBoardHandle, ChessBoardProps>(
               const isLegalMove = legalMoves.includes(square);
               const isDragging = draggedPiece === square;
               const isLastMove = lastMove?.from === square || lastMove?.to === square;
+              const isAnimating = animatingPiece?.to === square && animationOffset;
 
               return (
                 <div
@@ -266,7 +328,12 @@ export const ChessBoard = forwardRef<ChessBoardHandle, ChessBoardProps>(
                       className={`
                         ${isDragging ? 'opacity-30' : 'opacity-100'}
                         ${isPlayerPiece(square) && isPlayerTurn() ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'}
+                        ${isAnimating ? 'transition-transform duration-150 ease-out' : ''}
                       `}
+                      style={isAnimating ? {
+                        transform: `translate(${animationOffset.x * 100}%, ${animationOffset.y * 100}%)`,
+                        animation: 'piece-move 150ms ease-out forwards',
+                      } : undefined}
                     >
                       <ChessPiece 
                         piece={piece.type} 
