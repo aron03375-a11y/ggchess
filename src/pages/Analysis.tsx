@@ -2,12 +2,11 @@ import { useState, useCallback, useEffect } from 'react';
 import { Chess } from 'chess.js';
 import { useLocation } from 'react-router-dom';
 import { AnalysisChessBoard } from '@/components/AnalysisChessBoard';
-import { MoveHistoryWithAccuracy } from '@/components/MoveHistoryWithAccuracy';
+import { MoveHistory } from '@/components/MoveHistory';
 import { EngineEvaluation } from '@/components/EngineEvaluation';
 import { PromotionDialog } from '@/components/PromotionDialog';
 import { useCapturedPieces } from '@/components/CapturedPieces';
 import { useStockfishAnalysis } from '@/hooks/useStockfishAnalysis';
-import { useRealTimeAccuracy } from '@/hooks/useRealTimeAccuracy';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, RotateCcw, FlipVertical } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -28,7 +27,6 @@ const Analysis = () => {
   const [orientation, setOrientation] = useState<'white' | 'black'>('white');
 
   const { analysis, isReady, isAnalyzing, startAnalysis } = useStockfishAnalysis({ thinkTime: 3000 });
-  const { accuracyMarkers, processEvaluation, reset: resetAccuracy } = useRealTimeAccuracy();
   
   const displayFen = viewingIndex !== null ? fenHistory[viewingIndex + 1] : fen;
   const displayLastMove = viewingIndex !== null ? moveFromTo[viewingIndex] : lastMove;
@@ -82,20 +80,6 @@ const Analysis = () => {
       startAnalysis(displayFen);
     }
   }, [displayFen, isReady, startAnalysis]);
-
-  // Process evaluation for real-time accuracy marking
-  useEffect(() => {
-    if (viewingIndex === null) {
-      const game = new Chess(displayFen);
-      processEvaluation({
-        evaluation: analysis.evaluation,
-        isMate: analysis.isMate,
-        mateIn: analysis.mateIn,
-        isWhiteTurn: game.turn() === 'w',
-        depth: analysis.depth,
-      }, moves.length);
-    }
-  }, [analysis.evaluation, analysis.depth, analysis.isMate, analysis.mateIn, moves.length, displayFen, viewingIndex, processEvaluation]);
 
   const handleMove = useCallback((from: string, to: string, promotion?: 'q' | 'r' | 'b' | 'n'): boolean => {
     if (viewingIndex !== null) {
@@ -172,7 +156,6 @@ const Analysis = () => {
     setLastMove(null);
     setPendingPromotion(null);
     setViewingIndex(null);
-    resetAccuracy();
   };
 
   const handleNavigate = useCallback((index: number | null) => {
@@ -189,6 +172,14 @@ const Analysis = () => {
 
   const handleFlip = () => {
     setOrientation(prev => prev === 'white' ? 'black' : 'white');
+  };
+
+  // Determine promotion color from the pending promotion square (before the move is made)
+  const getPromotionColor = (): 'w' | 'b' => {
+    if (!pendingPromotion) return 'w';
+    const currentFen = viewingIndex !== null ? fenHistory[viewingIndex + 1] : fen;
+    const tempGame = new Chess(currentFen);
+    return tempGame.turn();
   };
 
   return (
@@ -230,16 +221,6 @@ const Analysis = () => {
             Flip Board
           </Button>
 
-          {/* Accuracy Summary */}
-          {accuracyMarkers.length > 0 && (
-            <div className="bg-card rounded-lg p-3 space-y-1">
-              <h3 className="font-fredoka text-sm text-card-foreground mb-2">Move Accuracy</h3>
-              <p className="text-xs text-yellow-500">?! Inaccuracies: {accuracyMarkers.filter(m => m.type === 'inaccuracy').length}</p>
-              <p className="text-xs text-orange-500">? Mistakes: {accuracyMarkers.filter(m => m.type === 'mistake').length}</p>
-              <p className="text-xs text-red-500">?? Blunders: {accuracyMarkers.filter(m => m.type === 'blunder').length}</p>
-            </div>
-          )}
-
           {/* Engine Evaluation */}
           <EngineEvaluation 
             analysis={analysis}
@@ -279,17 +260,16 @@ const Analysis = () => {
           
           {capturedPieces.bottom}
           
-          <MoveHistoryWithAccuracy 
+          <MoveHistory 
             moves={moves} 
             viewingIndex={viewingIndex} 
             onNavigate={handleNavigate}
-            accuracyMarkers={accuracyMarkers}
           />
         </div>
 
         <PromotionDialog
           isOpen={!!pendingPromotion}
-          color={game.turn() === 'w' ? 'w' : 'b'}
+          color={getPromotionColor()}
           onSelect={handlePromotionSelect}
           onCancel={handlePromotionCancel}
         />
