@@ -14,11 +14,11 @@ interface AnalysisInfo {
 }
 
 interface UseStockfishAnalysisOptions {
-  thinkTime?: number; // milliseconds
+  maxDepth?: number; // Maximum depth to analyze to
   multiPV?: number; // Number of lines to analyze
 }
 
-export const useStockfishAnalysis = ({ thinkTime = 3000, multiPV = 2 }: UseStockfishAnalysisOptions = {}) => {
+export const useStockfishAnalysis = ({ maxDepth = 20, multiPV = 2 }: UseStockfishAnalysisOptions = {}) => {
   const workerRef = useRef<Worker | null>(null);
   const [isReady, setIsReady] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -149,8 +149,8 @@ export const useStockfishAnalysis = ({ thinkTime = 3000, multiPV = 2 }: UseStock
     });
     
     workerRef.current.postMessage(`position fen ${fen}`);
-    workerRef.current.postMessage(`go movetime ${thinkTime}`);
-  }, [isReady, thinkTime]);
+    workerRef.current.postMessage(`go depth ${maxDepth}`);
+  }, [isReady, maxDepth]);
 
   const stopAnalysis = useCallback(() => {
     if (!workerRef.current) return;

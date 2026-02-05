@@ -27,7 +27,7 @@ const Analysis = () => {
   const [viewingIndex, setViewingIndex] = useState<number | null>(null);
   const [orientation, setOrientation] = useState<'white' | 'black'>('white');
 
-  const { analysis, isReady, isAnalyzing, startAnalysis } = useStockfishAnalysis({ thinkTime: 3000, multiPV: 2 });
+  const { analysis, isReady, isAnalyzing, startAnalysis } = useStockfishAnalysis({ maxDepth: 20, multiPV: 2 });
   
   const displayFen = viewingIndex !== null ? fenHistory[viewingIndex + 1] : fen;
   const displayLastMove = viewingIndex !== null ? moveFromTo[viewingIndex] : lastMove;
@@ -191,9 +191,38 @@ const Analysis = () => {
         </h1>
       </header>
 
-      <main className="flex flex-col gap-6 items-center w-full max-w-6xl mx-auto">
-        {/* Engine Lines at top */}
-        <div className="w-full max-w-lg">
+      <main className="flex flex-col lg:flex-row gap-6 items-start justify-center w-full max-w-6xl mx-auto">
+        {/* Left side - Controls + Engine Lines */}
+        <div className="flex flex-col gap-4 w-full lg:w-64">
+          <Button 
+            variant="outline" 
+            asChild
+          >
+            <Link to="/" className="flex items-center gap-2">
+              <ArrowLeft size={18} />
+              Back to Home
+            </Link>
+          </Button>
+
+          <Button 
+            variant="secondary" 
+            onClick={handleReset}
+            className="flex items-center gap-2"
+          >
+            <RotateCcw size={18} />
+            Reset Board
+          </Button>
+
+          <Button 
+            variant="secondary" 
+            onClick={handleFlip}
+            className="flex items-center gap-2"
+          >
+            <FlipVertical size={18} />
+            Flip Board
+          </Button>
+
+          {/* Engine Lines */}
           <EngineLines 
             lines={analysis.lines}
             isAnalyzing={isAnalyzing}
@@ -203,95 +232,63 @@ const Analysis = () => {
           />
         </div>
 
-        <div className="flex flex-col lg:flex-row gap-6 items-start justify-center w-full">
-          {/* Left side - Controls */}
-          <div className="flex flex-col gap-4 w-full lg:w-48">
-            <Button 
-              variant="outline" 
-              asChild
-            >
-              <Link to="/" className="flex items-center gap-2">
-                <ArrowLeft size={18} />
-                Back to Home
-              </Link>
-            </Button>
-
-            <Button 
-              variant="secondary" 
-              onClick={handleReset}
-              className="flex items-center gap-2"
-            >
-              <RotateCcw size={18} />
-              Reset Board
-            </Button>
-
-            <Button 
-              variant="secondary" 
-              onClick={handleFlip}
-              className="flex items-center gap-2"
-            >
-              <FlipVertical size={18} />
-              Flip Board
-            </Button>
+        {/* Center - Chess Board with Eval Bar */}
+        <div className="flex flex-col items-center gap-2">
+          {/* Turn indicator above board */}
+          <div className="text-center mb-1">
+            <p className="text-muted-foreground text-sm">
+              {game.turn() === 'w' ? 'White' : 'Black'} to move
+            </p>
+            {game.isCheck() && !game.isGameOver() && (
+              <p className="text-destructive font-semibold animate-pulse">Check!</p>
+            )}
+            {game.isCheckmate() && (
+              <p className="text-destructive font-semibold">Checkmate!</p>
+            )}
+            {game.isDraw() && (
+              <p className="text-muted-foreground font-semibold">Draw!</p>
+            )}
           </div>
-
-          {/* Center - Chess Board with Eval Bar */}
-          <div className="flex flex-col items-center gap-4">
-            <div className="text-center">
-              <p className="text-muted-foreground text-sm mb-1">
-                {game.turn() === 'w' ? 'White' : 'Black'} to move
-              </p>
-              {game.isCheck() && !game.isGameOver() && (
-                <p className="text-destructive font-semibold animate-pulse">Check!</p>
-              )}
-              {game.isCheckmate() && (
-                <p className="text-destructive font-semibold">Checkmate!</p>
-              )}
-              {game.isDraw() && (
-                <p className="text-muted-foreground font-semibold">Draw!</p>
-              )}
-            </div>
-            
-            {capturedPieces.top}
-            
-            {/* Board with vertical eval bar */}
-            <div className="flex items-stretch gap-2">
-              <div className="h-[min(80vw,400px)]">
-                <EvalBar 
-                  evaluation={analysis.lines[0]?.evaluation ?? null}
-                  isMate={analysis.lines[0]?.isMate ?? false}
-                  mateIn={analysis.lines[0]?.mateIn ?? null}
-                  fen={displayFen}
-                />
-              </div>
-              
-              <AnalysisChessBoard 
+          
+          {capturedPieces.top}
+          
+          {/* Board with vertical eval bar */}
+          <div className="flex items-stretch gap-2">
+            <div className="h-[min(80vw,400px)]">
+              <EvalBar 
+                evaluation={analysis.lines[0]?.evaluation ?? null}
+                isMate={analysis.lines[0]?.isMate ?? false}
+                mateIn={analysis.lines[0]?.mateIn ?? null}
                 fen={displayFen}
-                orientation={orientation}
-                onMove={handleMove}
-                disabled={false}
-                lastMove={displayLastMove}
-                onPromotionNeeded={handlePromotionNeeded}
               />
             </div>
             
-            {capturedPieces.bottom}
-            
-            <MoveHistory 
-              moves={moves} 
-              viewingIndex={viewingIndex} 
-              onNavigate={handleNavigate}
+            <AnalysisChessBoard 
+              fen={displayFen}
+              orientation={orientation}
+              onMove={handleMove}
+              disabled={false}
+              lastMove={displayLastMove}
+              onPromotionNeeded={handlePromotionNeeded}
             />
           </div>
+          
+          {capturedPieces.bottom}
+          
+          <MoveHistory 
+            moves={moves} 
+            viewingIndex={viewingIndex} 
+            onNavigate={handleNavigate}
+          />
         </div>
-
-        <PromotionDialog
-          isOpen={!!pendingPromotion}
-          color={getPromotionColor()}
-          onSelect={handlePromotionSelect}
-          onCancel={handlePromotionCancel}
-        />
       </main>
+
+      <PromotionDialog
+        isOpen={!!pendingPromotion}
+        color={getPromotionColor()}
+        onSelect={handlePromotionSelect}
+        onCancel={handlePromotionCancel}
+      />
     </div>
   );
 };
