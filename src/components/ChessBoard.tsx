@@ -99,7 +99,7 @@ export const ChessBoard = forwardRef<ChessBoardHandle, ChessBoardProps>(
           const timer = setTimeout(() => {
             setAnimatingPiece(null);
             setAnimationOffset(null);
-          }, 150);
+          }, 300);
           
           prevLastMoveRef.current = lastMove;
           return () => clearTimeout(timer);
@@ -328,11 +328,11 @@ export const ChessBoard = forwardRef<ChessBoardHandle, ChessBoardProps>(
                       className={`
                         ${isDragging ? 'opacity-30' : 'opacity-100'}
                         ${isPlayerPiece(square) && isPlayerTurn() ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'}
-                        ${isAnimating ? 'transition-transform duration-150 ease-out' : ''}
+                        ${isAnimating ? 'transition-transform duration-300 ease-out' : ''}
                       `}
                       style={isAnimating ? {
                         transform: `translate(${animationOffset.x * 100}%, ${animationOffset.y * 100}%)`,
-                        animation: 'piece-move 150ms ease-out forwards',
+                        animation: 'piece-move 300ms ease-out forwards',
                       } : undefined}
                     >
                       <ChessPiece 
