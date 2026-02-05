@@ -3,7 +3,8 @@ import { Chess } from 'chess.js';
 import { useLocation } from 'react-router-dom';
 import { AnalysisChessBoard } from '@/components/AnalysisChessBoard';
 import { MoveHistory } from '@/components/MoveHistory';
-import { EngineEvaluation } from '@/components/EngineEvaluation';
+import { EvalBar } from '@/components/EvalBar';
+import { EngineLines } from '@/components/EngineLines';
 import { PromotionDialog } from '@/components/PromotionDialog';
 import { useCapturedPieces } from '@/components/CapturedPieces';
 import { useStockfishAnalysis } from '@/hooks/useStockfishAnalysis';
@@ -26,7 +27,7 @@ const Analysis = () => {
   const [viewingIndex, setViewingIndex] = useState<number | null>(null);
   const [orientation, setOrientation] = useState<'white' | 'black'>('white');
 
-  const { analysis, isReady, isAnalyzing, startAnalysis } = useStockfishAnalysis({ thinkTime: 3000 });
+  const { analysis, isReady, isAnalyzing, startAnalysis } = useStockfishAnalysis({ thinkTime: 3000, multiPV: 2 });
   
   const displayFen = viewingIndex !== null ? fenHistory[viewingIndex + 1] : fen;
   const displayLastMove = viewingIndex !== null ? moveFromTo[viewingIndex] : lastMove;
@@ -190,81 +191,98 @@ const Analysis = () => {
         </h1>
       </header>
 
-      <main className="flex flex-col lg:flex-row gap-6 items-start justify-center w-full max-w-6xl mx-auto">
-        {/* Left side - Controls */}
-        <div className="flex flex-col gap-4 w-full lg:w-64">
-          <Button 
-            variant="outline" 
-            asChild
-          >
-            <Link to="/" className="flex items-center gap-2">
-              <ArrowLeft size={18} />
-              Back to Home
-            </Link>
-          </Button>
-
-          <Button 
-            variant="secondary" 
-            onClick={handleReset}
-            className="flex items-center gap-2"
-          >
-            <RotateCcw size={18} />
-            Reset Board
-          </Button>
-
-          <Button 
-            variant="secondary" 
-            onClick={handleFlip}
-            className="flex items-center gap-2"
-          >
-            <FlipVertical size={18} />
-            Flip Board
-          </Button>
-
-          {/* Engine Evaluation */}
-          <EngineEvaluation 
-            analysis={analysis}
+      <main className="flex flex-col gap-6 items-center w-full max-w-6xl mx-auto">
+        {/* Engine Lines at top */}
+        <div className="w-full max-w-lg">
+          <EngineLines 
+            lines={analysis.lines}
             isAnalyzing={isAnalyzing}
             fen={displayFen}
+            depth={analysis.depth}
             onPlayMove={handlePlayEngineMove}
           />
         </div>
 
-        {/* Center - Chess Board with Captured Pieces */}
-        <div className="flex flex-col items-center gap-4">
-          <div className="text-center">
-            <p className="text-muted-foreground text-sm mb-1">
-              {game.turn() === 'w' ? 'White' : 'Black'} to move
-            </p>
-            {game.isCheck() && !game.isGameOver() && (
-              <p className="text-destructive font-semibold animate-pulse">Check!</p>
-            )}
-            {game.isCheckmate() && (
-              <p className="text-destructive font-semibold">Checkmate!</p>
-            )}
-            {game.isDraw() && (
-              <p className="text-muted-foreground font-semibold">Draw!</p>
-            )}
+        <div className="flex flex-col lg:flex-row gap-6 items-start justify-center w-full">
+          {/* Left side - Controls */}
+          <div className="flex flex-col gap-4 w-full lg:w-48">
+            <Button 
+              variant="outline" 
+              asChild
+            >
+              <Link to="/" className="flex items-center gap-2">
+                <ArrowLeft size={18} />
+                Back to Home
+              </Link>
+            </Button>
+
+            <Button 
+              variant="secondary" 
+              onClick={handleReset}
+              className="flex items-center gap-2"
+            >
+              <RotateCcw size={18} />
+              Reset Board
+            </Button>
+
+            <Button 
+              variant="secondary" 
+              onClick={handleFlip}
+              className="flex items-center gap-2"
+            >
+              <FlipVertical size={18} />
+              Flip Board
+            </Button>
           </div>
-          
-          {capturedPieces.top}
-          
-          <AnalysisChessBoard 
-            fen={displayFen}
-            orientation={orientation}
-            onMove={handleMove}
-            disabled={false}
-            lastMove={displayLastMove}
-            onPromotionNeeded={handlePromotionNeeded}
-          />
-          
-          {capturedPieces.bottom}
-          
-          <MoveHistory 
-            moves={moves} 
-            viewingIndex={viewingIndex} 
-            onNavigate={handleNavigate}
-          />
+
+          {/* Center - Chess Board with Eval Bar */}
+          <div className="flex flex-col items-center gap-4">
+            <div className="text-center">
+              <p className="text-muted-foreground text-sm mb-1">
+                {game.turn() === 'w' ? 'White' : 'Black'} to move
+              </p>
+              {game.isCheck() && !game.isGameOver() && (
+                <p className="text-destructive font-semibold animate-pulse">Check!</p>
+              )}
+              {game.isCheckmate() && (
+                <p className="text-destructive font-semibold">Checkmate!</p>
+              )}
+              {game.isDraw() && (
+                <p className="text-muted-foreground font-semibold">Draw!</p>
+              )}
+            </div>
+            
+            {capturedPieces.top}
+            
+            {/* Board with vertical eval bar */}
+            <div className="flex items-stretch gap-2">
+              <div className="h-[min(80vw,400px)]">
+                <EvalBar 
+                  evaluation={analysis.lines[0]?.evaluation ?? null}
+                  isMate={analysis.lines[0]?.isMate ?? false}
+                  mateIn={analysis.lines[0]?.mateIn ?? null}
+                  fen={displayFen}
+                />
+              </div>
+              
+              <AnalysisChessBoard 
+                fen={displayFen}
+                orientation={orientation}
+                onMove={handleMove}
+                disabled={false}
+                lastMove={displayLastMove}
+                onPromotionNeeded={handlePromotionNeeded}
+              />
+            </div>
+            
+            {capturedPieces.bottom}
+            
+            <MoveHistory 
+              moves={moves} 
+              viewingIndex={viewingIndex} 
+              onNavigate={handleNavigate}
+            />
+          </div>
         </div>
 
         <PromotionDialog
