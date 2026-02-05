@@ -1,32 +1,35 @@
 import { useRef, useCallback, useEffect, useState } from 'react';
 
-interface AnalysisInfo {
-  bestMove: string | null;
-  pv: string[]; // Principal variation
-  evaluation: number | null; // Centipawns
-  depth: number;
+interface AnalysisLine {
+  pv: string[];
+  evaluation: number | null;
   isMate: boolean;
   mateIn: number | null;
 }
 
-interface UseStockfishAnalysisOptions {
-  thinkTime?: number; // milliseconds
+interface AnalysisInfo {
+  bestMove: string | null;
+  lines: AnalysisLine[];
+  depth: number;
 }
 
-export const useStockfishAnalysis = ({ thinkTime = 3000 }: UseStockfishAnalysisOptions = {}) => {
+interface UseStockfishAnalysisOptions {
+  thinkTime?: number; // milliseconds
+  multiPV?: number; // Number of lines to analyze
+}
+
+export const useStockfishAnalysis = ({ thinkTime = 3000, multiPV = 2 }: UseStockfishAnalysisOptions = {}) => {
   const workerRef = useRef<Worker | null>(null);
   const [isReady, setIsReady] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState<AnalysisInfo>({
     bestMove: null,
-    pv: [],
-    evaluation: null,
+    lines: [],
     depth: 0,
-    isMate: false,
-    mateIn: null,
   });
   const currentFenRef = useRef<string>('');
   const analysisTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const linesRef = useRef<Map<number, AnalysisLine>>(new Map());
 
   useEffect(() => {
     const workerCode = `
@@ -47,18 +50,20 @@ export const useStockfishAnalysis = ({ thinkTime = 3000 }: UseStockfishAnalysisO
         if (typeof message === 'string') {
           if (message === 'uciok') {
             worker.postMessage('setoption name Skill Level value 20');
-            worker.postMessage('setoption name MultiPV value 1');
+            worker.postMessage(`setoption name MultiPV value ${multiPV}`);
             worker.postMessage('isready');
           } else if (message === 'readyok') {
             setIsReady(true);
           } else if (message.startsWith('info depth')) {
-            // Parse analysis info
+            // Parse analysis info with MultiPV support
             const depthMatch = message.match(/depth (\d+)/);
+            const multipvMatch = message.match(/multipv (\d+)/);
             const scoreMatch = message.match(/score (cp|mate) (-?\d+)/);
             const pvMatch = message.match(/pv (.+)/);
             
-            if (depthMatch) {
+            if (depthMatch && pvMatch) {
               const depth = parseInt(depthMatch[1]);
+              const lineIndex = multipvMatch ? parseInt(multipvMatch[1]) - 1 : 0;
               let evaluation: number | null = null;
               let isMate = false;
               let mateIn: number | null = null;
@@ -72,15 +77,24 @@ export const useStockfishAnalysis = ({ thinkTime = 3000 }: UseStockfishAnalysisO
                 }
               }
               
-              const pv = pvMatch ? pvMatch[1].split(' ') : [];
+              const pv = pvMatch[1].split(' ');
+              
+              // Update the line in our ref
+              linesRef.current.set(lineIndex, { pv, evaluation, isMate, mateIn });
+              
+              // Convert map to sorted array
+              const linesArray: AnalysisLine[] = [];
+              for (let i = 0; i < multiPV; i++) {
+                const line = linesRef.current.get(i);
+                if (line) {
+                  linesArray.push(line);
+                }
+              }
               
               setAnalysis(prev => ({
                 ...prev,
                 depth,
-                evaluation,
-                isMate,
-                mateIn,
-                pv,
+                lines: linesArray,
               }));
             }
           } else if (message.startsWith('bestmove')) {
@@ -127,13 +141,11 @@ export const useStockfishAnalysis = ({ thinkTime = 3000 }: UseStockfishAnalysisO
     
     currentFenRef.current = fen;
     setIsAnalyzing(true);
+    linesRef.current.clear();
     setAnalysis({
       bestMove: null,
-      pv: [],
-      evaluation: null,
+      lines: [],
       depth: 0,
-      isMate: false,
-      mateIn: null,
     });
     
     workerRef.current.postMessage(`position fen ${fen}`);
