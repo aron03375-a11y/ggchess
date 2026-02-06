@@ -131,7 +131,6 @@ export const useStockfishAnalysis = ({ maxDepth = 20, multiPV = 2 }: UseStockfis
   }, []);
 
   const startAnalysis = useCallback((fen: string) => {
-    console.log('startAnalysis called, isReady:', isReady, 'worker:', !!workerRef.current);
     if (!workerRef.current || !isReady) return;
     
     // Stop any previous analysis
