@@ -100,7 +100,7 @@ export const useStockfishAnalysis = ({ maxDepth = 20, multiPV = 2 }: UseStockfis
           } else if (message.startsWith('bestmove')) {
             const match = message.match(/bestmove\s+(\S+)/);
             const bestMove = match ? match[1] : null;
-            console.log('Analysis Stockfish: bestmove', bestMove);
+            
             
             setAnalysis(prev => ({
               ...prev,
