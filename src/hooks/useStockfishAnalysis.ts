@@ -14,8 +14,8 @@ interface AnalysisInfo {
 }
 
 interface UseStockfishAnalysisOptions {
-  maxDepth?: number; // Maximum depth to analyze to
-  multiPV?: number; // Number of lines to analyze
+  maxDepth?: number;
+  multiPV?: number;
 }
 
 export const useStockfishAnalysis = ({ maxDepth = 20, multiPV = 2 }: UseStockfishAnalysisOptions = {}) => {
@@ -28,20 +28,11 @@ export const useStockfishAnalysis = ({ maxDepth = 20, multiPV = 2 }: UseStockfis
     depth: 0,
   });
   const currentFenRef = useRef<string>('');
-  const analysisTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const linesRef = useRef<Map<number, AnalysisLine>>(new Map());
 
   useEffect(() => {
-    const workerCode = `
-      importScripts('https://cdn.jsdelivr.net/npm/stockfish.js@10.0.2/stockfish.js');
-    `;
-    
     try {
-      const blob = new Blob([workerCode], { type: 'application/javascript' });
-      const workerUrl = URL.createObjectURL(blob);
-      const worker = new Worker(workerUrl);
-      URL.revokeObjectURL(workerUrl);
-      
+      const worker = new Worker('/stockfish/stockfish-17.1-lite-single.js');
       workerRef.current = worker;
 
       worker.onmessage = (e: MessageEvent) => {
@@ -50,12 +41,12 @@ export const useStockfishAnalysis = ({ maxDepth = 20, multiPV = 2 }: UseStockfis
         if (typeof message === 'string') {
           if (message === 'uciok') {
             worker.postMessage('setoption name Skill Level value 20');
-            worker.postMessage('setoption name MultiPV value 2');
+            worker.postMessage(`setoption name MultiPV value ${multiPV}`);
+            worker.postMessage('setoption name Hash value 16');
             worker.postMessage('isready');
           } else if (message === 'readyok') {
             setIsReady(true);
           } else if (message.startsWith('info') && message.includes(' pv ')) {
-            // Parse analysis info with MultiPV support
             const depthMatch = message.match(/depth (\d+)/);
             const multipvMatch = message.match(/multipv (\d+)/);
             const scoreMatch = message.match(/score (cp|mate) (-?\d+)/);
@@ -79,12 +70,10 @@ export const useStockfishAnalysis = ({ maxDepth = 20, multiPV = 2 }: UseStockfis
               
               const pv = pvMatch[1].trim().split(/\s+/);
               
-              // Update the line in our ref
               linesRef.current.set(lineIndex, { pv, evaluation, isMate, mateIn });
               
-              // Convert map to sorted array
               const linesArray: AnalysisLine[] = [];
-              for (let i = 0; i < 2; i++) {
+              for (let i = 0; i < multiPV; i++) {
                 const line = linesRef.current.get(i);
                 if (line) {
                   linesArray.push(line);
@@ -100,7 +89,6 @@ export const useStockfishAnalysis = ({ maxDepth = 20, multiPV = 2 }: UseStockfis
           } else if (message.startsWith('bestmove')) {
             const match = message.match(/bestmove\s+(\S+)/);
             const bestMove = match ? match[1] : null;
-            
             
             setAnalysis(prev => ({
               ...prev,
@@ -118,9 +106,7 @@ export const useStockfishAnalysis = ({ maxDepth = 20, multiPV = 2 }: UseStockfis
       worker.postMessage('uci');
 
       return () => {
-        if (analysisTimeoutRef.current) {
-          clearTimeout(analysisTimeoutRef.current);
-        }
+        worker.postMessage('quit');
         worker.terminate();
         workerRef.current = null;
         setIsReady(false);
@@ -128,17 +114,12 @@ export const useStockfishAnalysis = ({ maxDepth = 20, multiPV = 2 }: UseStockfis
     } catch (e) {
       console.error('Failed to create Stockfish worker:', e);
     }
-  }, []);
+  }, [multiPV]);
 
   const startAnalysis = useCallback((fen: string) => {
     if (!workerRef.current || !isReady) return;
     
-    // Stop any previous analysis
     workerRef.current.postMessage('stop');
-    
-    if (analysisTimeoutRef.current) {
-      clearTimeout(analysisTimeoutRef.current);
-    }
     
     currentFenRef.current = fen;
     setIsAnalyzing(true);
@@ -157,10 +138,6 @@ export const useStockfishAnalysis = ({ maxDepth = 20, multiPV = 2 }: UseStockfis
     if (!workerRef.current) return;
     workerRef.current.postMessage('stop');
     setIsAnalyzing(false);
-    
-    if (analysisTimeoutRef.current) {
-      clearTimeout(analysisTimeoutRef.current);
-    }
   }, []);
 
   return { 
