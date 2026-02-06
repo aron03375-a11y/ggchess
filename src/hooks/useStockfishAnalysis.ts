@@ -49,7 +49,6 @@ export const useStockfishAnalysis = ({ maxDepth = 20, multiPV = 2 }: UseStockfis
         
         if (typeof message === 'string') {
           if (message === 'uciok') {
-            console.log('Analysis Stockfish: uciok received');
             worker.postMessage('setoption name Skill Level value 20');
             worker.postMessage('setoption name MultiPV value 2');
             worker.postMessage('isready');
