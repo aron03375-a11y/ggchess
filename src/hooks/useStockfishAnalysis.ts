@@ -133,6 +133,7 @@ export const useStockfishAnalysis = ({ maxDepth = 20, multiPV = 2 }: UseStockfis
   }, []);
 
   const startAnalysis = useCallback((fen: string) => {
+    console.log('startAnalysis called, isReady:', isReady, 'worker:', !!workerRef.current);
     if (!workerRef.current || !isReady) return;
     
     // Stop any previous analysis
@@ -151,6 +152,7 @@ export const useStockfishAnalysis = ({ maxDepth = 20, multiPV = 2 }: UseStockfis
       depth: 0,
     });
     
+    console.log('Sending to analysis worker:', `position fen ${fen}`, `go depth ${maxDepth}`);
     workerRef.current.postMessage(`position fen ${fen}`);
     workerRef.current.postMessage(`go depth ${maxDepth}`);
   }, [isReady, maxDepth]);
