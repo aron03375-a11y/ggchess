@@ -12,38 +12,24 @@ export const useStockfish = ({ skillLevel, moveTime = 500, depth }: UseStockfish
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    // Create worker using stockfish.js CDN that supports CORS
-    const workerCode = `
-      importScripts('https://cdn.jsdelivr.net/npm/stockfish.js@10.0.2/stockfish.js');
-    `;
-    
     try {
-      const blob = new Blob([workerCode], { type: 'application/javascript' });
-      const workerUrl = URL.createObjectURL(blob);
-      const worker = new Worker(workerUrl);
-      URL.revokeObjectURL(workerUrl);
-      
+      const worker = new Worker('/stockfish/stockfish-17.1-lite-single.js');
       workerRef.current = worker;
 
       worker.onmessage = (e: MessageEvent) => {
         const message = e.data;
         
         if (typeof message === 'string') {
-          console.log('Stockfish:', message);
-          
           if (message === 'uciok') {
-            // Use skill level directly (0-20 scale)
             const clampedSkillLevel = Math.min(20, Math.max(0, skillLevel));
-            console.log('Setting skill level:', clampedSkillLevel);
             worker.postMessage(`setoption name Skill Level value ${clampedSkillLevel}`);
+            worker.postMessage('setoption name Hash value 16');
             worker.postMessage('isready');
           } else if (message === 'readyok') {
-            console.log('Stockfish ready');
             setIsReady(true);
           } else if (message.startsWith('bestmove')) {
             const match = message.match(/bestmove\s+(\S+)/);
             const bestMove = match ? match[1] : null;
-            console.log('Best move parsed:', bestMove);
             
             if (resolverRef.current) {
               resolverRef.current(bestMove);
@@ -57,10 +43,10 @@ export const useStockfish = ({ skillLevel, moveTime = 500, depth }: UseStockfish
         console.error('Stockfish worker error:', e);
       };
 
-      // Initialize UCI
       worker.postMessage('uci');
 
       return () => {
+        worker.postMessage('quit');
         worker.terminate();
         workerRef.current = null;
         setIsReady(false);
@@ -73,26 +59,20 @@ export const useStockfish = ({ skillLevel, moveTime = 500, depth }: UseStockfish
   const getBestMove = useCallback((fen: string): Promise<string | null> => {
     return new Promise((resolve) => {
       if (!workerRef.current) {
-        console.log('No worker available');
         resolve(null);
         return;
       }
 
       const attemptMove = (attempts = 0) => {
         if (attempts > 50) {
-          console.log('Stockfish not ready after timeout');
           resolve(null);
           return;
         }
         
         if (isReady && workerRef.current) {
           resolverRef.current = resolve;
-          console.log('Sending position to Stockfish:', fen);
           workerRef.current.postMessage(`position fen ${fen}`);
-          // Use depth limit if provided, otherwise use movetime
           const goCommand = depth ? `go depth ${depth}` : `go movetime ${moveTime}`;
-          console.log('Go command:', goCommand);
-          workerRef.current.postMessage(goCommand);
           workerRef.current.postMessage(goCommand);
         } else {
           setTimeout(() => attemptMove(attempts + 1), 100);
@@ -101,7 +81,7 @@ export const useStockfish = ({ skillLevel, moveTime = 500, depth }: UseStockfish
       
       attemptMove();
     });
-  }, [moveTime, isReady]);
+  }, [moveTime, depth, isReady]);
 
   return { getBestMove, isReady };
 };
