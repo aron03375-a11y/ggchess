@@ -149,7 +149,6 @@ export const useStockfishAnalysis = ({ maxDepth = 20, multiPV = 2 }: UseStockfis
       depth: 0,
     });
     
-    console.log('Sending to analysis worker:', `position fen ${fen}`, `go depth ${maxDepth}`);
     workerRef.current.postMessage(`position fen ${fen}`);
     workerRef.current.postMessage(`go depth ${maxDepth}`);
   }, [isReady, maxDepth]);
