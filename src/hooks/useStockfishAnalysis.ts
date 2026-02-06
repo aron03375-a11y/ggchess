@@ -53,7 +53,6 @@ export const useStockfishAnalysis = ({ maxDepth = 20, multiPV = 2 }: UseStockfis
             worker.postMessage('setoption name MultiPV value 2');
             worker.postMessage('isready');
           } else if (message === 'readyok') {
-            console.log('Analysis Stockfish: ready');
             setIsReady(true);
           } else if (message.startsWith('info') && message.includes(' pv ')) {
             // Parse analysis info with MultiPV support
