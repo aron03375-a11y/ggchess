@@ -50,16 +50,16 @@ export const useStockfishAnalysis = ({ maxDepth = 20, multiPV = 2 }: UseStockfis
         if (typeof message === 'string') {
           if (message === 'uciok') {
             worker.postMessage('setoption name Skill Level value 20');
-            worker.postMessage(`setoption name MultiPV value ${multiPV}`);
+            worker.postMessage('setoption name MultiPV value 2');
             worker.postMessage('isready');
           } else if (message === 'readyok') {
             setIsReady(true);
-          } else if (message.startsWith('info depth')) {
+          } else if (message.startsWith('info') && message.includes(' pv ')) {
             // Parse analysis info with MultiPV support
             const depthMatch = message.match(/depth (\d+)/);
             const multipvMatch = message.match(/multipv (\d+)/);
             const scoreMatch = message.match(/score (cp|mate) (-?\d+)/);
-            const pvMatch = message.match(/pv (.+)/);
+            const pvMatch = message.match(/ pv (.+)$/);
             
             if (depthMatch && pvMatch) {
               const depth = parseInt(depthMatch[1]);
@@ -77,29 +77,30 @@ export const useStockfishAnalysis = ({ maxDepth = 20, multiPV = 2 }: UseStockfis
                 }
               }
               
-              const pv = pvMatch[1].split(' ');
+              const pv = pvMatch[1].trim().split(/\s+/);
               
               // Update the line in our ref
               linesRef.current.set(lineIndex, { pv, evaluation, isMate, mateIn });
               
               // Convert map to sorted array
               const linesArray: AnalysisLine[] = [];
-              for (let i = 0; i < multiPV; i++) {
+              for (let i = 0; i < 2; i++) {
                 const line = linesRef.current.get(i);
                 if (line) {
                   linesArray.push(line);
                 }
               }
               
-              setAnalysis(prev => ({
-                ...prev,
+              setAnalysis({
+                bestMove: null,
                 depth,
-                lines: linesArray,
-              }));
+                lines: [...linesArray],
+              });
             }
           } else if (message.startsWith('bestmove')) {
             const match = message.match(/bestmove\s+(\S+)/);
             const bestMove = match ? match[1] : null;
+            
             
             setAnalysis(prev => ({
               ...prev,
