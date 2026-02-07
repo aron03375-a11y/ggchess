@@ -111,13 +111,3 @@
     border-left: 0;
   }
 }
-
-/* Chess piece move animation */
-@keyframes piece-move {
-  from {
-    transform: translate(var(--from-x, 0), var(--from-y, 0));
-  }
-  to {
-    transform: translate(0, 0);
-  }
-}
