@@ -64,7 +64,6 @@ export const useStockfishAnalysis = ({ maxDepth = 20, multiPV = 2 }: UseStockfis
               pendingFenRef.current = null;
               setTimeout(() => {
                 if (workerRef.current) {
-                  workerRef.current.postMessage('ucinewgame');
                   workerRef.current.postMessage(`position fen ${fen}`);
                   workerRef.current.postMessage(`go depth ${maxDepth}`);
                 }
@@ -164,7 +163,6 @@ export const useStockfishAnalysis = ({ maxDepth = 20, multiPV = 2 }: UseStockfis
     setAnalysis({ bestMove: null, lines: [], depth: 0 });
 
     try {
-      workerRef.current.postMessage('ucinewgame');
       workerRef.current.postMessage(`position fen ${fen}`);
       workerRef.current.postMessage(`go depth ${maxDepth}`);
     } catch {

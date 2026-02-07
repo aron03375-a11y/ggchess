@@ -97,7 +97,6 @@ export const useStockfish = ({ skillLevel, moveTime = 500, depth }: UseStockfish
       resolverRef.current = resolve;
       
       try {
-        workerRef.current.postMessage('ucinewgame');
         workerRef.current.postMessage(`position fen ${fen}`);
         const goCommand = depth ? `go depth ${depth}` : `go movetime ${moveTime}`;
         workerRef.current.postMessage(goCommand);
