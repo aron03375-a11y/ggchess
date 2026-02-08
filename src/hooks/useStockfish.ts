@@ -15,7 +15,6 @@ export const useStockfish = ({ skillLevel, moveTime = 500, depth }: UseStockfish
 
   const initWorker = useCallback(() => {
     try {
-      // Clean up old worker
       if (workerRef.current) {
         try {
           workerRef.current.postMessage('quit');
@@ -38,7 +37,7 @@ export const useStockfish = ({ skillLevel, moveTime = 500, depth }: UseStockfish
             worker.postMessage('isready');
           } else if (message === 'readyok') {
             setIsReady(true);
-            restartCountRef.current = 0; // Reset on successful init
+            restartCountRef.current = 0;
           } else if (message.startsWith('bestmove')) {
             const match = message.match(/bestmove\s+(\S+)/);
             const bestMove = match ? match[1] : null;
@@ -52,15 +51,12 @@ export const useStockfish = ({ skillLevel, moveTime = 500, depth }: UseStockfish
 
       worker.onerror = (e) => {
         console.error('Stockfish worker error, will restart:', e);
-        // Resolve any pending promise so the game doesn't hang
         if (resolverRef.current) {
           resolverRef.current(null);
           resolverRef.current = null;
         }
-        // Auto-restart
         if (restartCountRef.current < maxRestarts) {
           restartCountRef.current++;
-          console.log(`Restarting Stockfish worker (attempt ${restartCountRef.current}/${maxRestarts})...`);
           setTimeout(() => initWorker(), 500);
         }
       };
@@ -105,7 +101,6 @@ export const useStockfish = ({ skillLevel, moveTime = 500, depth }: UseStockfish
         resolve(null);
       }
 
-      // Safety timeout - if no response in 10s, resolve null
       setTimeout(() => {
         if (resolverRef.current === resolve) {
           resolverRef.current = null;

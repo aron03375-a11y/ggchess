@@ -132,7 +132,7 @@ export const useStockfishAnalysis = ({ maxDepth = 20, multiPV = 2 }: UseStockfis
     } catch (e) {
       console.error('Failed to create Stockfish analysis worker:', e);
     }
-  }, [multiPV, maxDepth, isAnalyzing]);
+  }, [multiPV, maxDepth]);
 
   useEffect(() => {
     restartCountRef.current = 0;
