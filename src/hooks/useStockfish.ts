@@ -1,17 +1,67 @@
 import { useRef, useCallback, useEffect, useState } from 'react';
+import { MittensFormula } from '@/types/bot';
 
 interface UseStockfishOptions {
   skillLevel: number;
   moveTime?: number;
   depth?: number;
+  formula?: MittensFormula;
 }
 
-export const useStockfish = ({ skillLevel, moveTime = 500, depth }: UseStockfishOptions) => {
+interface MoveScore {
+  move: string;
+  score: number; // centipawns from engine's perspective
+}
+
+function selectMoveByFormula(moves: MoveScore[], formula: MittensFormula): string {
+  if (moves.length === 0) return '';
+  if (moves.length === 1) return moves[0].move;
+
+  // Sort by score descending (best first)
+  const sorted = [...moves].sort((a, b) => b.score - a.score);
+  const bestScore = sorted[0].score;
+
+  // 1. Compute loss for each move
+  const withLoss = sorted.map(m => ({
+    move: m.move,
+    score: m.score,
+    loss: bestScore - m.score,
+  }));
+
+  // Best move (loss = 0)
+  const bestMove = withLoss[0].move;
+
+  // 2. Define allowed suboptimal moves (0 < loss <= maxLoss)
+  const allowed = withLoss.filter(m => m.loss > 0 && m.loss <= formula.maxLoss);
+
+  // 3. Roll to decide if we make a mistake
+  const r = Math.random();
+  if (r > formula.suboptimalProb || allowed.length === 0) {
+    return bestMove;
+  }
+
+  // 4. Pick from allowed using softmax weighted by temperature
+  const T = formula.temperature;
+  const weights = allowed.map(m => Math.exp(-m.loss / T));
+  const totalWeight = weights.reduce((sum, w) => sum + w, 0);
+
+  let roll = Math.random() * totalWeight;
+  for (let i = 0; i < allowed.length; i++) {
+    roll -= weights[i];
+    if (roll <= 0) return allowed[i].move;
+  }
+
+  return allowed[allowed.length - 1].move;
+}
+
+export const useStockfish = ({ skillLevel, moveTime = 500, depth, formula }: UseStockfishOptions) => {
   const workerRef = useRef<Worker | null>(null);
   const resolverRef = useRef<((move: string | null) => void) | null>(null);
   const [isReady, setIsReady] = useState(false);
   const restartCountRef = useRef(0);
   const maxRestarts = 5;
+  const collectedMovesRef = useRef<MoveScore[]>([]);
+  const useFormula = !!formula;
 
   const initWorker = useCallback(() => {
     try {
@@ -31,19 +81,57 @@ export const useStockfish = ({ skillLevel, moveTime = 500, depth }: UseStockfish
         const message = e.data;
         if (typeof message === 'string') {
           if (message === 'uciok') {
-            const clamped = Math.min(20, Math.max(0, skillLevel));
-            worker.postMessage(`setoption name Skill Level value ${clamped}`);
+            if (useFormula) {
+              // For formula bots, use MultiPV to get multiple move evaluations
+              worker.postMessage('setoption name MultiPV value 20');
+            } else {
+              const clamped = Math.min(20, Math.max(0, skillLevel));
+              worker.postMessage(`setoption name Skill Level value ${clamped}`);
+            }
             worker.postMessage('setoption name Hash value 16');
             worker.postMessage('isready');
           } else if (message === 'readyok') {
             setIsReady(true);
             restartCountRef.current = 0;
+          } else if (useFormula && message.startsWith('info') && message.includes(' pv ')) {
+            // Parse MultiPV info lines to collect move scores
+            const scoreMatch = message.match(/score cp (-?\d+)/);
+            const mateMatch = message.match(/score mate (-?\d+)/);
+            const pvMatch = message.match(/ pv (\S+)/);
+            if (pvMatch) {
+              let score = 0;
+              if (scoreMatch) {
+                score = parseInt(scoreMatch[1]);
+              } else if (mateMatch) {
+                const mateIn = parseInt(mateMatch[1]);
+                score = mateIn > 0 ? 30000 - mateIn * 100 : -30000 + Math.abs(mateIn) * 100;
+              }
+              const move = pvMatch[1];
+              // Update or add this move
+              const existing = collectedMovesRef.current.findIndex(m => m.move === move);
+              if (existing >= 0) {
+                collectedMovesRef.current[existing].score = score;
+              } else {
+                collectedMovesRef.current.push({ move, score });
+              }
+            }
           } else if (message.startsWith('bestmove')) {
-            const match = message.match(/bestmove\s+(\S+)/);
-            const bestMove = match ? match[1] : null;
-            if (resolverRef.current) {
-              resolverRef.current(bestMove);
-              resolverRef.current = null;
+            if (useFormula && formula && collectedMovesRef.current.length > 0) {
+              const selectedMove = selectMoveByFormula(collectedMovesRef.current, formula);
+              console.log(`Formula selected: ${selectedMove} from ${collectedMovesRef.current.length} moves`, collectedMovesRef.current);
+              collectedMovesRef.current = [];
+              if (resolverRef.current) {
+                resolverRef.current(selectedMove || null);
+                resolverRef.current = null;
+              }
+            } else {
+              const match = message.match(/bestmove\s+(\S+)/);
+              const bestMove = match ? match[1] : null;
+              collectedMovesRef.current = [];
+              if (resolverRef.current) {
+                resolverRef.current(bestMove);
+                resolverRef.current = null;
+              }
             }
           }
         }
@@ -65,7 +153,7 @@ export const useStockfish = ({ skillLevel, moveTime = 500, depth }: UseStockfish
     } catch (e) {
       console.error('Failed to create Stockfish worker:', e);
     }
-  }, [skillLevel]);
+  }, [skillLevel, useFormula]);
 
   useEffect(() => {
     restartCountRef.current = 0;
@@ -91,7 +179,8 @@ export const useStockfish = ({ skillLevel, moveTime = 500, depth }: UseStockfish
       }
 
       resolverRef.current = resolve;
-      
+      collectedMovesRef.current = [];
+
       try {
         workerRef.current.postMessage(`position fen ${fen}`);
         const goCommand = depth ? `go depth ${depth}` : `go movetime ${moveTime}`;
