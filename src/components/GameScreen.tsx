@@ -67,23 +67,10 @@ export const GameScreen = ({
     try {
       let bestMoveUci: string | null = null;
 
-      // Streamer Hikaru plays b3 as white first move, g3 as black first move
-      if (bot.id === 'streamer-hikaru') {
-        const isStartingPosition = currentFen.startsWith('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR');
-        const isBlackFirstMove = currentFen.startsWith('rnbqkbnr/pppppppp/8/8/') && tempGame.turn() === 'b' && tempGame.moveNumber() === 1;
-        if (isStartingPosition && tempGame.turn() === 'w') {
-          bestMoveUci = 'b2b3'; // b3 as white
-        } else if (isBlackFirstMove) {
-          bestMoveUci = 'g7g6'; // g6 as black (g3 notation is for white, g6 is the equivalent pawn move for black)
-        }
-      }
-
-      // If no hardcoded move, use Stockfish
-      if (!bestMoveUci) {
-        console.log('Bot thinking with FEN:', currentFen);
-        bestMoveUci = await getBestMove(currentFen);
-        console.log('Bot best move:', bestMoveUci);
-      }
+      // Use Stockfish (with formula selection if configured)
+      console.log('Bot thinking with FEN:', currentFen);
+      bestMoveUci = await getBestMove(currentFen);
+      console.log('Bot best move:', bestMoveUci);
       if (bestMoveUci && bestMoveUci !== '(none)') {
         const from = bestMoveUci.slice(0, 2);
         const to = bestMoveUci.slice(2, 4);
