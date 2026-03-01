@@ -1,5 +1,6 @@
 import { useRef, useCallback, useEffect, useState } from 'react';
 import { MittensFormula } from '@/types/bot';
+import { Chess } from 'chess.js';
 
 interface UseStockfishOptions {
   skillLevel: number;
@@ -10,37 +11,29 @@ interface UseStockfishOptions {
 
 interface MoveScore {
   move: string;
-  score: number; // centipawns from engine's perspective
+  score: number;
 }
 
 function selectMoveByFormula(moves: MoveScore[], formula: MittensFormula): string {
   if (moves.length === 0) return '';
   if (moves.length === 1) return moves[0].move;
 
-  // Sort by score descending (best first)
   const sorted = [...moves].sort((a, b) => b.score - a.score);
   const bestScore = sorted[0].score;
+  const bestMove = sorted[0].move;
 
-  // 1. Compute loss for each move
-  const withLoss = sorted.map(m => ({
-    move: m.move,
-    score: m.score,
-    loss: bestScore - m.score,
-  }));
+  // Compute loss and filter: allowed = moves where 0 < loss <= maxLoss
+  const allowed = sorted
+    .map(m => ({ move: m.move, loss: bestScore - m.score }))
+    .filter(m => m.loss > 0 && m.loss <= formula.maxLoss);
 
-  // Best move (loss = 0)
-  const bestMove = withLoss[0].move;
-
-  // 2. Define allowed suboptimal moves (0 < loss <= maxLoss)
-  const allowed = withLoss.filter(m => m.loss > 0 && m.loss <= formula.maxLoss);
-
-  // 3. Roll to decide if we make a mistake
+  // Roll to decide if we make a suboptimal move
   const r = Math.random();
   if (r > formula.suboptimalProb || allowed.length === 0) {
     return bestMove;
   }
 
-  // 4. Pick from allowed using softmax weighted by temperature
+  // Pick from allowed using softmax weighted by temperature
   const T = formula.temperature;
   const weights = allowed.map(m => Math.exp(-m.loss / T));
   const totalWeight = weights.reduce((sum, w) => sum + w, 0);
@@ -62,6 +55,7 @@ export const useStockfish = ({ skillLevel, moveTime = 500, depth, formula }: Use
   const maxRestarts = 5;
   const collectedMovesRef = useRef<MoveScore[]>([]);
   const useFormula = !!formula;
+  const fenRef = useRef<string>('');
 
   const initWorker = useCallback(() => {
     try {
@@ -82,8 +76,9 @@ export const useStockfish = ({ skillLevel, moveTime = 500, depth, formula }: Use
         if (typeof message === 'string') {
           if (message === 'uciok') {
             if (useFormula) {
-              // For formula bots, use MultiPV to get multiple move evaluations
-              worker.postMessage('setoption name MultiPV value 20');
+              // For formula bots, request ALL legal moves via high MultiPV
+              // We'll set a very high number; Stockfish caps it at the number of legal moves
+              worker.postMessage('setoption name MultiPV value 500');
             } else {
               const clamped = Math.min(20, Math.max(0, skillLevel));
               worker.postMessage(`setoption name Skill Level value ${clamped}`);
@@ -94,7 +89,6 @@ export const useStockfish = ({ skillLevel, moveTime = 500, depth, formula }: Use
             setIsReady(true);
             restartCountRef.current = 0;
           } else if (useFormula && message.startsWith('info') && message.includes(' pv ')) {
-            // Parse MultiPV info lines to collect move scores
             const scoreMatch = message.match(/score cp (-?\d+)/);
             const mateMatch = message.match(/score mate (-?\d+)/);
             const pvMatch = message.match(/ pv (\S+)/);
@@ -107,7 +101,6 @@ export const useStockfish = ({ skillLevel, moveTime = 500, depth, formula }: Use
                 score = mateIn > 0 ? 30000 - mateIn * 100 : -30000 + Math.abs(mateIn) * 100;
               }
               const move = pvMatch[1];
-              // Update or add this move
               const existing = collectedMovesRef.current.findIndex(m => m.move === move);
               if (existing >= 0) {
                 collectedMovesRef.current[existing].score = score;
@@ -118,7 +111,7 @@ export const useStockfish = ({ skillLevel, moveTime = 500, depth, formula }: Use
           } else if (message.startsWith('bestmove')) {
             if (useFormula && formula && collectedMovesRef.current.length > 0) {
               const selectedMove = selectMoveByFormula(collectedMovesRef.current, formula);
-              console.log(`Formula selected: ${selectedMove} from ${collectedMovesRef.current.length} moves`, collectedMovesRef.current);
+              console.log(`Mittens formula: selected ${selectedMove} from ${collectedMovesRef.current.length} total moves`);
               collectedMovesRef.current = [];
               if (resolverRef.current) {
                 resolverRef.current(selectedMove || null);
