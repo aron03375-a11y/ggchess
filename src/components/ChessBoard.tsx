@@ -99,7 +99,7 @@ export const ChessBoard = forwardRef<ChessBoardHandle, ChessBoardProps>(
           const timer = setTimeout(() => {
             setAnimatingPiece(null);
             setAnimationOffset(null);
-          }, 300);
+          }, 700);
           
           prevLastMoveRef.current = lastMove;
           return () => clearTimeout(timer);
