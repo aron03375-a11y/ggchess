@@ -68,19 +68,19 @@ export const useStockfish = ({ skillLevel, moveTime = 500, depth, formula }: Use
       workerRef.current = null;
       setIsReady(false);
 
-      const worker = new Worker('/stockfish/stockfish-17.1-lite-single.js');
+      const worker = new Worker('/stockfish/love-7.0.js');
       workerRef.current = worker;
 
       worker.onmessage = (e: MessageEvent) => {
         const message = e.data;
         if (typeof message === 'string') {
-          if (message === 'uciok') {
+          if (message === 'loveok') {
             if (useFormula) {
               // For formula bots, request ALL legal moves via high MultiPV
               // We'll set a very high number; Stockfish caps it at the number of legal moves
               worker.postMessage('setoption name MultiPV value 500');
             } else {
-              const clamped = Math.min(20, Math.max(0, skillLevel));
+              const clamped = Math.min(15, Math.max(0, skillLevel));
               worker.postMessage(`setoption name Skill Level value ${clamped}`);
             }
             worker.postMessage('setoption name Hash value 16');
