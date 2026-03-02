@@ -296,7 +296,7 @@ export const ChessBoard = forwardRef<ChessBoardHandle, ChessBoardProps>(
                   onDragOver={handleNativeDragOver}
                   onDrop={(e) => handleNativeDrop(e, square)}
                   className={`
-                    w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 lg:w-16 lg:h-16
+                    w-[calc((100vw-2rem)/8)] h-[calc((100vw-2rem)/8)] sm:w-12 sm:h-12 md:w-14 md:h-14 lg:w-16 lg:h-16
                     flex items-center justify-center relative
                     transition-all duration-150
                     ${isLastMove 
