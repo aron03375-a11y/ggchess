@@ -2,6 +2,7 @@ import aronChill from '@/assets/aron-chill.png';
 import aronFocused from '@/assets/aron-focused.png';
 import aronCompetitive from '@/assets/aron-competitive.png';
 import aronMadness from '@/assets/aron-madness.png';
+import catKitten from '@/assets/cat-kitten.png';
 import catWhiskers from '@/assets/cat-whiskers.png';
 import catPatches from '@/assets/cat-patches.png';
 import catShadow from '@/assets/cat-shadow.png';
@@ -53,10 +54,21 @@ export const aronBots: Bot[] = [
 
 export const catBots: Bot[] = [
   {
+    id: 'kitten',
+    name: 'Kitten',
+    elo: 600,
+    skillLevel: 0,
+    depth: 3,
+    image: catKitten,
+    greeting: "Mew~ What's chess?",
+    category: 'cat',
+    formula: { maxLoss: 400, temperature: 800, suboptimalProb: 0.6 },
+  },
+  {
     id: 'whiskers',
     name: 'Whiskers',
-    elo: 400,
-    skillLevel: 0,
+    elo: 1000,
+    skillLevel: 1,
     depth: 3,
     image: catWhiskers,
     greeting: "Meow~ I just wanna play!",
@@ -65,8 +77,8 @@ export const catBots: Bot[] = [
   {
     id: 'patches',
     name: 'Patches',
-    elo: 800,
-    skillLevel: 2,
+    elo: 1400,
+    skillLevel: 3,
     depth: 4,
     image: catPatches,
     greeting: "Purrfect time for chess!",
@@ -75,8 +87,8 @@ export const catBots: Bot[] = [
   {
     id: 'shadow',
     name: 'Shadow',
-    elo: 1200,
-    skillLevel: 4,
+    elo: 1800,
+    skillLevel: 5,
     depth: 6,
     image: catShadow,
     greeting: "I see everything... *hiss*",
@@ -87,11 +99,11 @@ export const catBots: Bot[] = [
     name: 'Mittens',
     elo: 1,
     skillLevel: 0,
-    depth: 15,
+    depth: 12,
     image: botMittens,
     greeting: "I will destroy you. Meow.",
     category: 'cat',
-    formula: { maxLoss: 90, temperature: 50, suboptimalProb: 0.6 },
+    formula: { maxLoss: 80, temperature: 160, suboptimalProb: 0.6 },
   },
 ];
 
