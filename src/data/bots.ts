@@ -85,7 +85,7 @@ export const catBots: Bot[] = [
   {
     id: 'mittens',
     name: 'Mittens',
-    elo: 2000,
+    elo: 1,
     skillLevel: 0,
     depth: 15,
     image: botMittens,
