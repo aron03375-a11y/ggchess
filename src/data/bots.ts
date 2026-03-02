@@ -62,7 +62,6 @@ export const catBots: Bot[] = [
     image: catKitten,
     greeting: "Mew~ What's chess?",
     category: 'cat',
-    formula: { maxLoss: 500, temperature: 1500, suboptimalProb: 0.8 },
   },
   {
     id: 'whiskers',
