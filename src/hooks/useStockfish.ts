@@ -109,12 +109,12 @@ export const useStockfish = ({ skillLevel, moveTime = 500, depth, formula }: Use
           } else if (message.startsWith('bestmove')) {
             if (useFormula && formula && collectedMovesRef.current.length > 0) {
               const selectedMove = selectMoveByFormula(collectedMovesRef.current, formula);
-              console.log(`Mittens formula: selected ${selectedMove} from ${collectedMovesRef.current.length} total moves`);
-              collectedMovesRef.current = [];
               if (resolverRef.current) {
+                console.log(`Mittens formula: selected ${selectedMove} from ${collectedMovesRef.current.length} total moves`);
                 resolverRef.current(selectedMove || null);
                 resolverRef.current = null;
               }
+              collectedMovesRef.current = [];
             } else {
               const match = message.match(/bestmove\s+(\S+)/);
               const bestMove = match ? match[1] : null;
@@ -172,28 +172,58 @@ export const useStockfish = ({ skillLevel, moveTime = 500, depth, formula }: Use
       resolverRef.current = resolve;
       collectedMovesRef.current = [];
 
+      const isFormulaBot = useFormula && !!formula;
+      const formulaMoveTimeCap = isFormulaBot
+        ? Math.max(1800, Math.min(4500, Math.max(moveTime, ((depth ?? 8) * 250))))
+        : moveTime;
+
       try {
-        if (useFormula) {
+        if (isFormulaBot) {
           // Dynamically set MultiPV to exact number of legal moves
           const tempGame = new Chess(fen);
           const legalMoves = tempGame.moves().length;
           const mpv = Math.max(1, legalMoves);
           workerRef.current.postMessage(`setoption name MultiPV value ${mpv}`);
         }
+
         workerRef.current.postMessage(`position fen ${fen}`);
-        const goCommand = depth ? `go depth ${depth}` : `go movetime ${moveTime}`;
+
+        let goCommand = '';
+        if (depth && isFormulaBot) {
+          // Keep depth target but hard-cap think time so Mittens responds faster
+          goCommand = `go depth ${depth} movetime ${formulaMoveTimeCap}`;
+        } else if (depth) {
+          goCommand = `go depth ${depth}`;
+        } else {
+          goCommand = `go movetime ${moveTime}`;
+        }
+
         workerRef.current.postMessage(goCommand);
       } catch {
         resolverRef.current = null;
         resolve(null);
       }
 
-      const timeoutMs = useFormula
-        ? Math.max(15000, (depth ?? 8) * 2500)
-        : 10000;
+      const timeoutMs = isFormulaBot
+        ? formulaMoveTimeCap + 2500
+        : depth
+          ? Math.max(10000, depth * 1500)
+          : 10000;
 
       setTimeout(() => {
         if (resolverRef.current !== resolve) return;
+
+        if (isFormulaBot && formula && collectedMovesRef.current.length > 0) {
+          const selectedMove = selectMoveByFormula(collectedMovesRef.current, formula);
+          console.log(`Mittens timeout fallback: selected ${selectedMove} from ${collectedMovesRef.current.length} partial moves`);
+          collectedMovesRef.current = [];
+          resolverRef.current = null;
+          try {
+            workerRef.current?.postMessage('stop');
+          } catch {}
+          resolve(selectedMove || null);
+          return;
+        }
 
         try {
           workerRef.current?.postMessage('stop');
@@ -205,10 +235,10 @@ export const useStockfish = ({ skillLevel, moveTime = 500, depth, formula }: Use
             resolverRef.current = null;
             resolve(null);
           }
-        }, 2000);
+        }, 1200);
       }, timeoutMs);
     });
-  }, [moveTime, depth, isReady, useFormula]);
+  }, [moveTime, depth, isReady, useFormula, formula]);
 
   return { getBestMove, isReady };
 };
