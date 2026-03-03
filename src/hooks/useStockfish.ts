@@ -76,9 +76,9 @@ export const useStockfish = ({ skillLevel, moveTime = 500, depth, formula }: Use
         if (typeof message === 'string') {
           if (message === 'loveok') {
             if (useFormula) {
-              // For formula bots, request ALL legal moves via high MultiPV
-              // We'll set a very high number; Stockfish caps it at the number of legal moves
-              worker.postMessage('setoption name MultiPV value 500');
+              // For formula bots, use MultiPV to get candidate moves
+              // Love engine may not support very high values, so use a moderate number
+              worker.postMessage('setoption name MultiPV value 20');
             } else {
               const clamped = Math.min(15, Math.max(0, skillLevel));
               worker.postMessage(`setoption name Skill Level value ${clamped}`);
