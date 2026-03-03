@@ -76,9 +76,7 @@ export const useStockfish = ({ skillLevel, moveTime = 500, depth, formula }: Use
         if (typeof message === 'string') {
           if (message === 'loveok') {
             if (useFormula) {
-              // For formula bots, use MultiPV to get candidate moves
-              // Love engine may not support very high values, so use a moderate number
-              worker.postMessage('setoption name MultiPV value 20');
+              // MultiPV will be set dynamically per move in getBestMove
             } else {
               const clamped = Math.min(15, Math.max(0, skillLevel));
               worker.postMessage(`setoption name Skill Level value ${clamped}`);
@@ -175,6 +173,13 @@ export const useStockfish = ({ skillLevel, moveTime = 500, depth, formula }: Use
       collectedMovesRef.current = [];
 
       try {
+        if (useFormula) {
+          // Dynamically set MultiPV to exact number of legal moves
+          const tempGame = new Chess(fen);
+          const legalMoves = tempGame.moves().length;
+          const mpv = Math.max(1, legalMoves);
+          workerRef.current.postMessage(`setoption name MultiPV value ${mpv}`);
+        }
         workerRef.current.postMessage(`position fen ${fen}`);
         const goCommand = depth ? `go depth ${depth}` : `go movetime ${moveTime}`;
         workerRef.current.postMessage(goCommand);
