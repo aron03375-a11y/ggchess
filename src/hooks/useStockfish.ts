@@ -68,17 +68,19 @@ export const useStockfish = ({ skillLevel, moveTime = 500, depth, formula }: Use
       workerRef.current = null;
       setIsReady(false);
 
-      const worker = new Worker('/stockfish/love-7.0.js');
+      const worker = new Worker('/stockfish/stockfish-17.1-lite-single.js');
       workerRef.current = worker;
 
       worker.onmessage = (e: MessageEvent) => {
         const message = e.data;
         if (typeof message === 'string') {
-          if (message === 'loveok') {
+          if (message === 'uciok') {
             if (useFormula) {
-              // MultiPV will be set dynamically per move in getBestMove
+              // For formula bots, request ALL legal moves via high MultiPV
+              // We'll set a very high number; Stockfish caps it at the number of legal moves
+              worker.postMessage('setoption name MultiPV value 500');
             } else {
-              const clamped = Math.min(15, Math.max(0, skillLevel));
+              const clamped = Math.min(20, Math.max(0, skillLevel));
               worker.postMessage(`setoption name Skill Level value ${clamped}`);
             }
             worker.postMessage('setoption name Hash value 16');
@@ -109,12 +111,12 @@ export const useStockfish = ({ skillLevel, moveTime = 500, depth, formula }: Use
           } else if (message.startsWith('bestmove')) {
             if (useFormula && formula && collectedMovesRef.current.length > 0) {
               const selectedMove = selectMoveByFormula(collectedMovesRef.current, formula);
+              console.log(`Mittens formula: selected ${selectedMove} from ${collectedMovesRef.current.length} total moves`);
+              collectedMovesRef.current = [];
               if (resolverRef.current) {
-                console.log(`Mittens formula: selected ${selectedMove} from ${collectedMovesRef.current.length} total moves`);
                 resolverRef.current(selectedMove || null);
                 resolverRef.current = null;
               }
-              collectedMovesRef.current = [];
             } else {
               const match = message.match(/bestmove\s+(\S+)/);
               const bestMove = match ? match[1] : null;
@@ -172,73 +174,23 @@ export const useStockfish = ({ skillLevel, moveTime = 500, depth, formula }: Use
       resolverRef.current = resolve;
       collectedMovesRef.current = [];
 
-      const isFormulaBot = useFormula && !!formula;
-      const formulaMoveTimeCap = isFormulaBot
-        ? Math.max(1800, Math.min(4500, Math.max(moveTime, ((depth ?? 8) * 250))))
-        : moveTime;
-
       try {
-        if (isFormulaBot) {
-          // Dynamically set MultiPV to exact number of legal moves
-          const tempGame = new Chess(fen);
-          const legalMoves = tempGame.moves().length;
-          const mpv = Math.max(1, legalMoves);
-          workerRef.current.postMessage(`setoption name MultiPV value ${mpv}`);
-        }
-
         workerRef.current.postMessage(`position fen ${fen}`);
-
-        let goCommand = '';
-        if (depth && isFormulaBot) {
-          // Keep depth target but hard-cap think time so Mittens responds faster
-          goCommand = `go depth ${depth} movetime ${formulaMoveTimeCap}`;
-        } else if (depth) {
-          goCommand = `go depth ${depth}`;
-        } else {
-          goCommand = `go movetime ${moveTime}`;
-        }
-
+        const goCommand = depth ? `go depth ${depth}` : `go movetime ${moveTime}`;
         workerRef.current.postMessage(goCommand);
       } catch {
         resolverRef.current = null;
         resolve(null);
       }
 
-      const timeoutMs = isFormulaBot
-        ? formulaMoveTimeCap + 2500
-        : depth
-          ? Math.max(10000, depth * 1500)
-          : 10000;
-
       setTimeout(() => {
-        if (resolverRef.current !== resolve) return;
-
-        if (isFormulaBot && formula && collectedMovesRef.current.length > 0) {
-          const selectedMove = selectMoveByFormula(collectedMovesRef.current, formula);
-          console.log(`Mittens timeout fallback: selected ${selectedMove} from ${collectedMovesRef.current.length} partial moves`);
-          collectedMovesRef.current = [];
+        if (resolverRef.current === resolve) {
           resolverRef.current = null;
-          try {
-            workerRef.current?.postMessage('stop');
-          } catch {}
-          resolve(selectedMove || null);
-          return;
+          resolve(null);
         }
-
-        try {
-          workerRef.current?.postMessage('stop');
-        } catch {}
-
-        // Give engine a short grace period to emit bestmove after stop
-        setTimeout(() => {
-          if (resolverRef.current === resolve) {
-            resolverRef.current = null;
-            resolve(null);
-          }
-        }, 1200);
-      }, timeoutMs);
+      }, 10000);
     });
-  }, [moveTime, depth, isReady, useFormula, formula]);
+  }, [moveTime, depth, isReady]);
 
   return { getBestMove, isReady };
 };
