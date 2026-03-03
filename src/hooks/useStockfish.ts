@@ -188,14 +188,27 @@ export const useStockfish = ({ skillLevel, moveTime = 500, depth, formula }: Use
         resolve(null);
       }
 
+      const timeoutMs = useFormula
+        ? Math.max(15000, (depth ?? 8) * 2500)
+        : 10000;
+
       setTimeout(() => {
-        if (resolverRef.current === resolve) {
-          resolverRef.current = null;
-          resolve(null);
-        }
-      }, 10000);
+        if (resolverRef.current !== resolve) return;
+
+        try {
+          workerRef.current?.postMessage('stop');
+        } catch {}
+
+        // Give engine a short grace period to emit bestmove after stop
+        setTimeout(() => {
+          if (resolverRef.current === resolve) {
+            resolverRef.current = null;
+            resolve(null);
+          }
+        }, 2000);
+      }, timeoutMs);
     });
-  }, [moveTime, depth, isReady]);
+  }, [moveTime, depth, isReady, useFormula]);
 
   return { getBestMove, isReady };
 };
