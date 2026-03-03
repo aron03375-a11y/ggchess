@@ -175,6 +175,13 @@ export const useStockfish = ({ skillLevel, moveTime = 500, depth, formula }: Use
       collectedMovesRef.current = [];
 
       try {
+        if (useFormula) {
+          // Dynamically set MultiPV to exact number of legal moves
+          const tempGame = new Chess(fen);
+          const legalMoves = tempGame.moves().length;
+          const mpv = Math.max(1, legalMoves);
+          workerRef.current.postMessage(`setoption name MultiPV value ${mpv}`);
+        }
         workerRef.current.postMessage(`position fen ${fen}`);
         const goCommand = depth ? `go depth ${depth}` : `go movetime ${moveTime}`;
         workerRef.current.postMessage(goCommand);
