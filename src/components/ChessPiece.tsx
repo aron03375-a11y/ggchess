@@ -5,7 +5,7 @@ export interface ChessPieceProps {
 }
 
 const getPieceUrl = (piece: string, color: 'w' | 'b'): string => {
-  return `/pieces/${color}${piece.toUpperCase()}.png`;
+  return `/pieces/${color}${piece.toLowerCase()}.png`;
 };
 
 export const ChessPiece = ({ piece, color, size = 'md' }: ChessPieceProps) => {
