@@ -4,19 +4,9 @@ export interface ChessPieceProps {
   size?: 'sm' | 'md';
 }
 
-// Lichess cburnett piece set URLs
+// Lichess staunty piece set
 const getPieceUrl = (piece: string, color: 'w' | 'b'): string => {
-  const colorName = color === 'w' ? 'white' : 'black';
-  const pieceNames: Record<string, string> = {
-    k: 'king',
-    q: 'queen',
-    r: 'rook',
-    b: 'bishop',
-    n: 'knight',
-    p: 'pawn',
-  };
-  const pieceName = pieceNames[piece.toLowerCase()];
-  return `https://lichess1.org/assets/_BcVVbc/piece/cburnett/${colorName[0]}${piece.toUpperCase()}.svg`;
+  return `https://lichess1.org/assets/_BcVVbc/piece/staunty/${color}${piece.toUpperCase()}.svg`;
 };
 
 export const ChessPiece = ({ piece, color, size = 'md' }: ChessPieceProps) => {
@@ -25,8 +15,8 @@ export const ChessPiece = ({ piece, color, size = 'md' }: ChessPieceProps) => {
   const pieceUrl = getPieceUrl(piece, color);
   
   const sizeClasses = size === 'sm' 
-    ? 'w-5 h-5 sm:w-6 sm:h-6' 
-    : 'w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 lg:w-14 lg:h-14';
+    ? 'w-6 h-6 sm:w-7 sm:h-7' 
+    : 'w-[90%] h-[90%]';
   
   return (
     <img 
