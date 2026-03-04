@@ -329,12 +329,12 @@ export const ChessBoard = forwardRef<ChessBoardHandle, ChessBoardProps>(
                         w-full h-full flex items-center justify-center
                         ${isDragging ? 'opacity-30' : 'opacity-100'}
                         ${isPlayerPiece(square) && isPlayerTurn() ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'}
-                        ${isAnimating ? 'transition-transform duration-[300ms] ease-out' : ''}
                       `}
                       style={isAnimating ? {
-                        transform: `translate(${animationOffset.x * 100}%, ${animationOffset.y * 100}%)`,
+                        '--from-x': `${animationOffset.x * 100}%`,
+                        '--from-y': `${animationOffset.y * 100}%`,
                         animation: 'piece-move 300ms ease-out forwards',
-                      } : undefined}
+                      } as React.CSSProperties : undefined}
                     >
                       <ChessPiece 
                         piece={piece.type} 
