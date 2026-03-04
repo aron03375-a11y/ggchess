@@ -326,14 +326,27 @@ export const ChessBoard = forwardRef<ChessBoardHandle, ChessBoardProps>(
                       onTouchStart={(e) => handleTouchStart(e, square)}
                       onTouchEnd={handleTouchEnd}
                       className={`
+                        w-full h-full flex items-center justify-center
                         ${isDragging ? 'opacity-30' : 'opacity-100'}
                         ${isPlayerPiece(square) && isPlayerTurn() ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'}
-                        ${isAnimating ? 'transition-transform duration-[900ms] ease-out' : ''}
                       `}
                       style={isAnimating ? {
-                        transform: `translate(${animationOffset.x * 100}%, ${animationOffset.y * 100}%)`,
-                        animation: 'piece-move 900ms ease-out forwards',
+                        transform: 'translate(0, 0)',
+                        transition: 'transform 300ms ease-out',
                       } : undefined}
+                      ref={(el) => {
+                        if (isAnimating && el) {
+                          // Start from offset position, then animate to 0,0
+                          el.style.transform = `translate(${animationOffset!.x * 100}%, ${animationOffset!.y * 100}%)`;
+                          el.style.transition = 'none';
+                          requestAnimationFrame(() => {
+                            requestAnimationFrame(() => {
+                              el.style.transition = 'transform 300ms ease-out';
+                              el.style.transform = 'translate(0, 0)';
+                            });
+                          });
+                        }
+                      }}
                     >
                       <ChessPiece 
                         piece={piece.type} 

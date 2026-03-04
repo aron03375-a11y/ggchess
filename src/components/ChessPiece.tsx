@@ -15,13 +15,13 @@ export const ChessPiece = ({ piece, color, size = 'md' }: ChessPieceProps) => {
   
   const sizeClasses = size === 'sm' 
     ? 'w-6 h-6 sm:w-7 sm:h-7' 
-    : 'w-[90%] h-[90%]';
+    : 'w-[95%] h-[95%]';
   
   return (
     <img 
       src={pieceUrl}
       alt={`${color === 'w' ? 'White' : 'Black'} ${piece}`}
-      className={`${sizeClasses} select-none pointer-events-none`}
+      className={`${sizeClasses} select-none pointer-events-none object-contain`}
       draggable={false}
     />
   );
