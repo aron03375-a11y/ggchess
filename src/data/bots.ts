@@ -97,12 +97,11 @@ export const catBots: Bot[] = [
     id: 'mittens',
     name: 'Mittens',
     elo: 1,
-    skillLevel: 0,
+    skillLevel: 18,
     depth: 12,
     image: botMittens,
     greeting: "I will destroy you. Meow.",
     category: 'cat',
-    formula: { maxLoss: 80, temperature: 160, suboptimalProb: 0.6 },
   },
 ];
 
