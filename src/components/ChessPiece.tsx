@@ -4,9 +4,8 @@ export interface ChessPieceProps {
   size?: 'sm' | 'md';
 }
 
-// Lichess staunty piece set
 const getPieceUrl = (piece: string, color: 'w' | 'b'): string => {
-  return `https://lichess1.org/assets/_BcVVbc/piece/staunty/${color}${piece.toUpperCase()}.svg`;
+  return `/pieces/${color}${piece.toUpperCase()}.png`;
 };
 
 export const ChessPiece = ({ piece, color, size = 'md' }: ChessPieceProps) => {
