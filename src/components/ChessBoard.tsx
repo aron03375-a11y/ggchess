@@ -331,22 +331,10 @@ export const ChessBoard = forwardRef<ChessBoardHandle, ChessBoardProps>(
                         ${isPlayerPiece(square) && isPlayerTurn() ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'}
                       `}
                       style={isAnimating ? {
-                        transform: 'translate(0, 0)',
-                        transition: 'transform 300ms ease-out',
-                      } : undefined}
-                      ref={(el) => {
-                        if (isAnimating && el) {
-                          // Start from offset position, then animate to 0,0
-                          el.style.transform = `translate(${animationOffset!.x * 100}%, ${animationOffset!.y * 100}%)`;
-                          el.style.transition = 'none';
-                          requestAnimationFrame(() => {
-                            requestAnimationFrame(() => {
-                              el.style.transition = 'transform 300ms ease-out';
-                              el.style.transform = 'translate(0, 0)';
-                            });
-                          });
-                        }
-                      }}
+                        '--from-x': `${animationOffset.x * 100}%`,
+                        '--from-y': `${animationOffset.y * 100}%`,
+                        animation: 'piece-move 300ms ease-out forwards',
+                      } as React.CSSProperties : undefined}
                     >
                       <ChessPiece 
                         piece={piece.type} 
