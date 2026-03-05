@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { Chess, Square } from 'chess.js';
 import { ChessPiece } from './ChessPiece';
 import { BoardArrows } from './BoardArrows';
@@ -173,7 +173,7 @@ export const AnalysisChessBoard = ({
     setDragPosition({ x: touch.clientX, y: touch.clientY });
   }, [disabled, isCurrentTurnPiece, getLegalMovesForSquare]);
 
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+  const handleTouchMoveNative = useCallback((e: TouchEvent) => {
     if (!draggedPiece) return;
     e.preventDefault();
     const touch = e.touches[0];
@@ -199,12 +199,20 @@ export const AnalysisChessBoard = ({
     clearSelection();
   }, [draggedPiece, legalMoves, getSquareFromPoint, onMove, isPromotionMove, onPromotionNeeded]);
 
+  useEffect(() => {
+    const board = boardRef.current;
+    if (!board) return;
+    board.addEventListener('touchmove', handleTouchMoveNative, { passive: false });
+    return () => {
+      board.removeEventListener('touchmove', handleTouchMoveNative);
+    };
+  }, [handleTouchMoveNative]);
+
   return (
     <div className="relative">
       <div 
         ref={boardRef}
         className="inline-grid grid-cols-8 rounded-lg overflow-hidden shadow-2xl border-4 border-primary/30"
-        onTouchMove={handleTouchMove}
       >
         {displayRanks.map((rank, rankIndex) =>
           displayFiles.map((file, fileIndex) => {
