@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, forwardRef, useImperativeHandle } from 'react';
+import { useState, useCallback, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { Chess, Square } from 'chess.js';
 import { ChessPiece } from './ChessPiece';
 import { BoardArrows } from './BoardArrows';
@@ -212,7 +212,7 @@ export const ChessBoard = forwardRef<ChessBoardHandle, ChessBoardProps>(
     }, [draggedPiece, legalMoves, getSquareFromPoint, onMove, isPromotionMove, onPromotionNeeded]);
 
     // Attach touchmove with { passive: false } to allow preventDefault (stops page scroll)
-    React.useEffect(() => {
+    useEffect(() => {
       const board = boardRef.current;
       if (!board) return;
       board.addEventListener('touchmove', handleTouchMoveNative, { passive: false });
