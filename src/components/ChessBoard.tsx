@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, forwardRef, useImperativeHandle, useEffect } from 'react';
+import { useState, useCallback, useRef, forwardRef, useImperativeHandle } from 'react';
 import { Chess, Square } from 'chess.js';
 import { ChessPiece } from './ChessPiece';
 import { BoardArrows } from './BoardArrows';
@@ -29,8 +29,6 @@ export const ChessBoard = forwardRef<ChessBoardHandle, ChessBoardProps>(
     const [dragPosition, setDragPosition] = useState<{ x: number; y: number } | null>(null);
     const [arrows, setArrows] = useState<Arrow[]>([]);
     const boardRef = useRef<HTMLDivElement>(null);
-    const prevLastMoveRef = useRef<{ from: string; to: string } | null>(null);
-    const wasDragMoveRef = useRef(false);
 
     // Expose clearArrows method
     useImperativeHandle(ref, () => ({
@@ -49,47 +47,6 @@ export const ChessBoard = forwardRef<ChessBoardHandle, ChessBoardProps>(
     const displayFiles = playerColor === 'black' ? [...files].reverse() : files;
     const displayRanks = playerColor === 'black' ? [...ranks].reverse() : ranks;
 
-    // Calculate square position based on board orientation
-    const getSquarePosition = useCallback((square: string): { col: number; row: number } => {
-      const file = square[0];
-      const rank = square[1];
-      const col = displayFiles.indexOf(file);
-      const row = displayRanks.indexOf(rank);
-      return { col, row };
-    }, [displayFiles, displayRanks]);
-
-    // Synchronous animation: compute offset on render when lastMove changes
-    const animationData = (() => {
-      if (!lastMove) {
-        prevLastMoveRef.current = null;
-        return null;
-      }
-      if (wasDragMoveRef.current) {
-        // Skip animation for drag moves
-        prevLastMoveRef.current = lastMove;
-        wasDragMoveRef.current = false;
-        return null;
-      }
-      if (prevLastMoveRef.current &&
-          lastMove.from === prevLastMoveRef.current.from &&
-          lastMove.to === prevLastMoveRef.current.to) {
-        return null; // Same move, already animated
-      }
-      const fromPos = getSquarePosition(lastMove.from);
-      const toPos = getSquarePosition(lastMove.to);
-      return {
-        square: lastMove.to,
-        offsetX: fromPos.col - toPos.col,
-        offsetY: fromPos.row - toPos.row,
-      };
-    })();
-
-    // Update ref after render via effect
-    useEffect(() => {
-      if (lastMove) {
-        prevLastMoveRef.current = lastMove;
-      }
-    }, [lastMove]);
 
     const isPlayerPiece = useCallback((square: string) => {
       const piece = game.get(square as Square);
@@ -203,7 +160,6 @@ export const ChessBoard = forwardRef<ChessBoardHandle, ChessBoardProps>(
           if (isPromotionMove(fromSquare, targetSquare)) {
             onPromotionNeeded?.(fromSquare, targetSquare);
           } else {
-            wasDragMoveRef.current = true;
             onMove(fromSquare, targetSquare);
           }
         }
@@ -246,7 +202,6 @@ export const ChessBoard = forwardRef<ChessBoardHandle, ChessBoardProps>(
         if (isPromotionMove(draggedPiece, targetSquare)) {
           onPromotionNeeded?.(draggedPiece, targetSquare);
         } else {
-          wasDragMoveRef.current = true;
           onMove(draggedPiece, targetSquare);
         }
       }
@@ -272,7 +227,7 @@ export const ChessBoard = forwardRef<ChessBoardHandle, ChessBoardProps>(
               const isLegalMove = legalMoves.includes(square);
               const isDragging = draggedPiece === square;
               const isLastMove = lastMove?.from === square || lastMove?.to === square;
-              const isAnimating = animationData?.square === square;
+              
 
               return (
                 <div
@@ -315,11 +270,6 @@ export const ChessBoard = forwardRef<ChessBoardHandle, ChessBoardProps>(
                         ${isDragging ? 'opacity-30' : 'opacity-100'}
                         ${isPlayerPiece(square) && isPlayerTurn() ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'}
                       `}
-                      style={isAnimating && animationData ? {
-                        '--from-x': `${animationData.offsetX * 100}%`,
-                        '--from-y': `${animationData.offsetY * 100}%`,
-                        animation: 'piece-move 300ms ease-out forwards',
-                      } as React.CSSProperties : undefined}
                     >
                       <ChessPiece 
                         piece={piece.type} 
