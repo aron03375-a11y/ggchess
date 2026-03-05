@@ -36,11 +36,9 @@ export const ChessBoard = forwardRef<ChessBoardHandle, ChessBoardProps>(
     const [draggedPiece, setDraggedPiece] = useState<string | null>(null);
     const [dragPosition, setDragPosition] = useState<{ x: number; y: number } | null>(null);
     const [arrows, setArrows] = useState<Arrow[]>([]);
-    const [animatingPiece, setAnimatingPiece] = useState<AnimatingPiece | null>(null);
-    const [animationOffset, setAnimationOffset] = useState<{ x: number; y: number } | null>(null);
     const boardRef = useRef<HTMLDivElement>(null);
     const prevLastMoveRef = useRef<{ from: string; to: string } | null>(null);
-    const animationKeyRef = useRef(0);
+    const wasDragMoveRef = useRef(false);
 
     // Expose clearArrows method
     useImperativeHandle(ref, () => ({
