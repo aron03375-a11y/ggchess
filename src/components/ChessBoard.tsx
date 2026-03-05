@@ -203,6 +203,7 @@ export const ChessBoard = forwardRef<ChessBoardHandle, ChessBoardProps>(
           if (isPromotionMove(fromSquare, targetSquare)) {
             onPromotionNeeded?.(fromSquare, targetSquare);
           } else {
+            wasDragMoveRef.current = true;
             onMove(fromSquare, targetSquare);
           }
         }
