@@ -185,7 +185,7 @@ export const ChessBoard = forwardRef<ChessBoardHandle, ChessBoardProps>(
       setDragPosition({ x: touch.clientX, y: touch.clientY });
     }, [isPlayerTurn, isPlayerPiece, getLegalMovesForSquare]);
 
-    const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    const handleTouchMoveNative = useCallback((e: TouchEvent) => {
       if (!draggedPiece) return;
       e.preventDefault();
       const touch = e.touches[0];
@@ -211,12 +211,21 @@ export const ChessBoard = forwardRef<ChessBoardHandle, ChessBoardProps>(
       clearSelection();
     }, [draggedPiece, legalMoves, getSquareFromPoint, onMove, isPromotionMove, onPromotionNeeded]);
 
+    // Attach touchmove with { passive: false } to allow preventDefault (stops page scroll)
+    React.useEffect(() => {
+      const board = boardRef.current;
+      if (!board) return;
+      board.addEventListener('touchmove', handleTouchMoveNative, { passive: false });
+      return () => {
+        board.removeEventListener('touchmove', handleTouchMoveNative);
+      };
+    }, [handleTouchMoveNative]);
+
     return (
       <div className="relative">
         <div 
           ref={boardRef}
           className="inline-grid grid-cols-8 rounded-lg overflow-hidden shadow-2xl border-4 border-primary/30"
-          onTouchMove={handleTouchMove}
         >
           {displayRanks.map((rank, rankIndex) =>
             displayFiles.map((file, fileIndex) => {
