@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, forwardRef, useImperativeHandle, useEffect, useMemo } from 'react';
+import { useState, useCallback, useRef, forwardRef, useImperativeHandle, useEffect } from 'react';
 import { Chess, Square } from 'chess.js';
 import { ChessPiece } from './ChessPiece';
 import { BoardArrows } from './BoardArrows';
