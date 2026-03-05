@@ -270,7 +270,7 @@ export const ChessBoard = forwardRef<ChessBoardHandle, ChessBoardProps>(
               const isLegalMove = legalMoves.includes(square);
               const isDragging = draggedPiece === square;
               const isLastMove = lastMove?.from === square || lastMove?.to === square;
-              const isAnimating = animatingPiece?.to === square && animationOffset;
+              const isAnimating = animationData?.square === square;
 
               return (
                 <div
@@ -313,9 +313,9 @@ export const ChessBoard = forwardRef<ChessBoardHandle, ChessBoardProps>(
                         ${isDragging ? 'opacity-30' : 'opacity-100'}
                         ${isPlayerPiece(square) && isPlayerTurn() ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'}
                       `}
-                      style={isAnimating ? {
-                        '--from-x': `${animationOffset.x * 100}%`,
-                        '--from-y': `${animationOffset.y * 100}%`,
+                      style={isAnimating && animationData ? {
+                        '--from-x': `${animationData.offsetX * 100}%`,
+                        '--from-y': `${animationData.offsetY * 100}%`,
                         animation: 'piece-move 300ms ease-out forwards',
                       } as React.CSSProperties : undefined}
                     >
