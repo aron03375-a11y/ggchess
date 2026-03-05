@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, forwardRef, useImperativeHandle, useEffect, useMemo } from 'react';
+import { useState, useCallback, useRef, forwardRef, useImperativeHandle, useEffect } from 'react';
 import { Chess, Square } from 'chess.js';
 import { ChessPiece } from './ChessPiece';
 import { BoardArrows } from './BoardArrows';
@@ -6,14 +6,6 @@ import { BoardArrows } from './BoardArrows';
 interface Arrow {
   from: string;
   to: string;
-}
-
-interface AnimatingPiece {
-  piece: string;
-  color: 'w' | 'b';
-  from: string;
-  to: string;
-  key: number;
 }
 
 interface ChessBoardProps {
@@ -36,11 +28,9 @@ export const ChessBoard = forwardRef<ChessBoardHandle, ChessBoardProps>(
     const [draggedPiece, setDraggedPiece] = useState<string | null>(null);
     const [dragPosition, setDragPosition] = useState<{ x: number; y: number } | null>(null);
     const [arrows, setArrows] = useState<Arrow[]>([]);
-    const [animatingPiece, setAnimatingPiece] = useState<AnimatingPiece | null>(null);
-    const [animationOffset, setAnimationOffset] = useState<{ x: number; y: number } | null>(null);
     const boardRef = useRef<HTMLDivElement>(null);
     const prevLastMoveRef = useRef<{ from: string; to: string } | null>(null);
-    const animationKeyRef = useRef(0);
+    const wasDragMoveRef = useRef(false);
 
     // Expose clearArrows method
     useImperativeHandle(ref, () => ({
@@ -68,45 +58,38 @@ export const ChessBoard = forwardRef<ChessBoardHandle, ChessBoardProps>(
       return { col, row };
     }, [displayFiles, displayRanks]);
 
-    // Handle move animation when lastMove changes
-    useEffect(() => {
-      if (lastMove && (!prevLastMoveRef.current || 
-          lastMove.from !== prevLastMoveRef.current.from || 
-          lastMove.to !== prevLastMoveRef.current.to)) {
-        
-        // Get the piece that just moved (it's now at the 'to' square)
-        const piece = game.get(lastMove.to as Square);
-        
-        if (piece) {
-          const fromPos = getSquarePosition(lastMove.from);
-          const toPos = getSquarePosition(lastMove.to);
-          
-          // Calculate the offset (where to start the animation from)
-          const offsetX = fromPos.col - toPos.col;
-          const offsetY = fromPos.row - toPos.row;
-          
-          animationKeyRef.current += 1;
-          setAnimatingPiece({
-            piece: piece.type,
-            color: piece.color,
-            from: lastMove.from,
-            to: lastMove.to,
-            key: animationKeyRef.current,
-          });
-          setAnimationOffset({ x: offsetX, y: offsetY });
-          
-          // Clear the animation after it completes
-          const timer = setTimeout(() => {
-            setAnimatingPiece(null);
-            setAnimationOffset(null);
-          }, 350);
-          
-          prevLastMoveRef.current = lastMove;
-          return () => clearTimeout(timer);
-        }
+    // Synchronous animation: compute offset on render when lastMove changes
+    const animationData = (() => {
+      if (!lastMove) {
+        prevLastMoveRef.current = null;
+        return null;
       }
-      prevLastMoveRef.current = lastMove;
-    }, [lastMove, fen, getSquarePosition]);
+      if (wasDragMoveRef.current) {
+        // Skip animation for drag moves
+        prevLastMoveRef.current = lastMove;
+        wasDragMoveRef.current = false;
+        return null;
+      }
+      if (prevLastMoveRef.current &&
+          lastMove.from === prevLastMoveRef.current.from &&
+          lastMove.to === prevLastMoveRef.current.to) {
+        return null; // Same move, already animated
+      }
+      const fromPos = getSquarePosition(lastMove.from);
+      const toPos = getSquarePosition(lastMove.to);
+      return {
+        square: lastMove.to,
+        offsetX: fromPos.col - toPos.col,
+        offsetY: fromPos.row - toPos.row,
+      };
+    })();
+
+    // Update ref after render via effect
+    useEffect(() => {
+      if (lastMove) {
+        prevLastMoveRef.current = lastMove;
+      }
+    }, [lastMove]);
 
     const isPlayerPiece = useCallback((square: string) => {
       const piece = game.get(square as Square);
@@ -220,6 +203,7 @@ export const ChessBoard = forwardRef<ChessBoardHandle, ChessBoardProps>(
           if (isPromotionMove(fromSquare, targetSquare)) {
             onPromotionNeeded?.(fromSquare, targetSquare);
           } else {
+            wasDragMoveRef.current = true;
             onMove(fromSquare, targetSquare);
           }
         }
@@ -262,6 +246,7 @@ export const ChessBoard = forwardRef<ChessBoardHandle, ChessBoardProps>(
         if (isPromotionMove(draggedPiece, targetSquare)) {
           onPromotionNeeded?.(draggedPiece, targetSquare);
         } else {
+          wasDragMoveRef.current = true;
           onMove(draggedPiece, targetSquare);
         }
       }
@@ -287,7 +272,7 @@ export const ChessBoard = forwardRef<ChessBoardHandle, ChessBoardProps>(
               const isLegalMove = legalMoves.includes(square);
               const isDragging = draggedPiece === square;
               const isLastMove = lastMove?.from === square || lastMove?.to === square;
-              const isAnimating = animatingPiece?.to === square && animationOffset;
+              const isAnimating = animationData?.square === square;
 
               return (
                 <div
@@ -330,9 +315,9 @@ export const ChessBoard = forwardRef<ChessBoardHandle, ChessBoardProps>(
                         ${isDragging ? 'opacity-30' : 'opacity-100'}
                         ${isPlayerPiece(square) && isPlayerTurn() ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'}
                       `}
-                      style={isAnimating ? {
-                        '--from-x': `${animationOffset.x * 100}%`,
-                        '--from-y': `${animationOffset.y * 100}%`,
+                      style={isAnimating && animationData ? {
+                        '--from-x': `${animationData.offsetX * 100}%`,
+                        '--from-y': `${animationData.offsetY * 100}%`,
                         animation: 'piece-move 300ms ease-out forwards',
                       } as React.CSSProperties : undefined}
                     >
