@@ -7,6 +7,11 @@ import catWhiskers from '@/assets/cat-whiskers.png';
 import catPatches from '@/assets/cat-patches.png';
 import catShadow from '@/assets/cat-shadow.png';
 import botMittens from '@/assets/bot-mittens.png';
+import coachBotez from '@/assets/coach-botez.png';
+import coachAnna from '@/assets/coach-anna.jpeg';
+import coachDina from '@/assets/coach-dina.jpeg';
+import coachEric from '@/assets/coach-eric.jpeg';
+import coachGotham from '@/assets/coach-gotham.jpeg';
 import { Bot } from '@/types/bot';
 
 export const aronBots: Bot[] = [
@@ -105,4 +110,57 @@ export const catBots: Bot[] = [
   },
 ];
 
-export const allBots = [...aronBots, ...catBots];
+export const coachBots: Bot[] = [
+  {
+    id: 'botez-sisters',
+    name: 'Botez Sisters',
+    elo: 600,
+    skillLevel: 0,
+    depth: 3,
+    image: coachBotez,
+    greeting: "Let's have some fun with chess!",
+    category: 'coach',
+  },
+  {
+    id: 'anna-cramling',
+    name: 'Anna Cramling',
+    elo: 1100,
+    skillLevel: 2,
+    depth: 3,
+    image: coachAnna,
+    greeting: "Hi! Ready to learn some chess?",
+    category: 'coach',
+  },
+  {
+    id: 'dina-belenkaya',
+    name: 'Dina Belenkaya',
+    elo: 1375,
+    skillLevel: 3,
+    depth: 5,
+    image: coachDina,
+    greeting: "Let's play a beautiful game!",
+    category: 'coach',
+  },
+  {
+    id: 'eric-rosen',
+    name: 'Eric Rosen',
+    elo: 1820,
+    skillLevel: 7,
+    depth: 5,
+    image: coachEric,
+    greeting: "Oh no my queen! Just kidding.",
+    category: 'coach',
+  },
+  {
+    id: 'gotham-chess',
+    name: 'GothamChess',
+    elo: 2450,
+    skillLevel: 14,
+    depth: 9,
+    image: coachGotham,
+    greeting: "Get out the WAYYYY!",
+    category: 'coach',
+  },
+];
+
+export const allBots = [...aronBots, ...catBots, ...coachBots];
