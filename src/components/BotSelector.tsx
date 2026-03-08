@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Bot } from '@/types/bot';
-import { aronBots, catBots } from '@/data/bots';
+import { aronBots, catBots, coachBots } from '@/data/bots';
 import { BotAvatar } from './BotAvatar';
 import { BotDetailCard } from './BotDetailCard';
 
