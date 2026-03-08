@@ -12,7 +12,7 @@ export interface Bot {
   depth?: number;
   image: string;
   greeting: string;
-  category: 'aron' | 'cat';
+  category: 'aron' | 'cat' | 'coach';
   formula?: MittensFormula; // If set, uses formula-based move selection
 }
 

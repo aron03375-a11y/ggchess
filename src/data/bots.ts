@@ -7,6 +7,11 @@ import catWhiskers from '@/assets/cat-whiskers.png';
 import catPatches from '@/assets/cat-patches.png';
 import catShadow from '@/assets/cat-shadow.png';
 import botMittens from '@/assets/bot-mittens.png';
+import coachBotez from '@/assets/coach-botez.png';
+import coachAnna from '@/assets/coach-anna.jpeg';
+import coachDina from '@/assets/coach-dina.jpeg';
+import coachEric from '@/assets/coach-eric.jpeg';
+import coachGotham from '@/assets/coach-gotham.jpeg';
 import { Bot } from '@/types/bot';
 
 export const aronBots: Bot[] = [
