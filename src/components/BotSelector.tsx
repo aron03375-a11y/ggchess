@@ -61,8 +61,23 @@ export const BotSelector = ({ onStartGame }: BotSelectorProps) => {
                   onClick={() => handleBotClick(bot)}
                 />
               ))}
+          </div>
+
+          {/* Internet's Chess Coaches */}
+          <div className="bot-card-bg rounded-lg p-4">
+            <h3 className="text-center font-nunito font-medium text-sm mb-3">Internet's chess coaches</h3>
+            <div className="flex justify-center gap-3 flex-wrap">
+              {coachBots.map((bot) => (
+                <BotAvatar
+                  key={bot.id}
+                  bot={bot}
+                  isSelected={selectedBot?.id === bot.id}
+                  onClick={() => handleBotClick(bot)}
+                />
+              ))}
             </div>
           </div>
+        </div>
         </div>
       )}
     </div>
