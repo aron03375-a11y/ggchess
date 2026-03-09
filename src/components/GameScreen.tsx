@@ -67,10 +67,9 @@ export const GameScreen = ({
     try {
       let bestMoveUci: string | null = null;
 
-      // Check for predefined opening moves
-      const tempMoves = tempGame.history();
-      if (bot.openingMoves && tempMoves.length === 1 && bot.openingMoves[tempMoves[0]]) {
-        const responseSan = bot.openingMoves[tempMoves[0]];
+      // Check for predefined opening moves (use component's moves state, not FEN-derived history)
+      if (bot.openingMoves && moves.length === 1 && bot.openingMoves[moves[0]]) {
+        const responseSan = bot.openingMoves[moves[0]];
         const openingGame = new Chess(currentFen);
         const openingMove = openingGame.move(responseSan);
         if (openingMove) {
