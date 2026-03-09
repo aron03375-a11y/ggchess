@@ -61,6 +61,7 @@ export const BotSelector = ({ onStartGame }: BotSelectorProps) => {
                   onClick={() => handleBotClick(bot)}
                 />
               ))}
+            </div>
           </div>
 
           {/* Internet's Chess Coaches */}
@@ -77,7 +78,6 @@ export const BotSelector = ({ onStartGame }: BotSelectorProps) => {
               ))}
             </div>
           </div>
-        </div>
         </div>
       )}
     </div>
