@@ -67,9 +67,23 @@ export const GameScreen = ({
     try {
       let bestMoveUci: string | null = null;
 
-      // Use Stockfish (with formula selection if configured)
-      console.log('Bot thinking with FEN:', currentFen);
-      bestMoveUci = await getBestMove(currentFen);
+      // Check for predefined opening moves
+      const tempMoves = tempGame.history();
+      if (bot.openingMoves && tempMoves.length === 1 && bot.openingMoves[tempMoves[0]]) {
+        const responseSan = bot.openingMoves[tempMoves[0]];
+        const openingGame = new Chess(currentFen);
+        const openingMove = openingGame.move(responseSan);
+        if (openingMove) {
+          bestMoveUci = openingMove.from + openingMove.to;
+        }
+      }
+
+      if (!bestMoveUci) {
+        // Use Stockfish (with formula selection if configured)
+        console.log('Bot thinking with FEN:', currentFen);
+        bestMoveUci = await getBestMove(currentFen);
+        console.log('Bot best move:', bestMoveUci);
+      }
       console.log('Bot best move:', bestMoveUci);
       if (bestMoveUci && bestMoveUci !== '(none)') {
         const from = bestMoveUci.slice(0, 2);
