@@ -79,7 +79,6 @@ export const BotSelector = ({ onStartGame }: BotSelectorProps) => {
             </div>
           </div>
         </div>
-        </div>
       )}
     </div>
   );
