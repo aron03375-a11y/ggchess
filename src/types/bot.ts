@@ -14,6 +14,7 @@ export interface Bot {
   greeting: string;
   category: 'aron' | 'cat' | 'coach';
   formula?: MittensFormula; // If set, uses formula-based move selection
+  openingMoves?: Record<string, string>; // Maps opponent's first move (SAN) to bot's response (SAN)
 }
 
 export interface GameState {
