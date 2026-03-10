@@ -227,7 +227,8 @@ export const ChessBoard = forwardRef<ChessBoardHandle, ChessBoardProps>(
               const isLegalMove = legalMoves.includes(square);
               const isDragging = draggedPiece === square;
               const isLastMove = lastMove?.from === square || lastMove?.to === square;
-              
+              const showRank = fileIndex === 0;
+              const showFile = rankIndex === 7;
 
               return (
                 <div
@@ -246,6 +247,19 @@ export const ChessBoard = forwardRef<ChessBoardHandle, ChessBoardProps>(
                     hover:brightness-110 cursor-pointer
                   `}
                 >
+                  {/* Rank label (1-8) on left edge */}
+                  {showRank && (
+                    <span className={`absolute top-0.5 left-0.5 text-[10px] font-bold pointer-events-none select-none ${isLight ? 'text-chess-dark/70' : 'text-chess-light/70'}`}>
+                      {rank}
+                    </span>
+                  )}
+                  {/* File label (a-h) on bottom edge */}
+                  {showFile && (
+                    <span className={`absolute bottom-0.5 right-0.5 text-[10px] font-bold pointer-events-none select-none ${isLight ? 'text-chess-dark/70' : 'text-chess-light/70'}`}>
+                      {file}
+                    </span>
+                  )}
+
                   {/* Legal move indicator */}
                   {isLegalMove && (
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
