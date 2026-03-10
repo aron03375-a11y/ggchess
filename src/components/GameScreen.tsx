@@ -121,7 +121,7 @@ export const GameScreen = ({
       setIsThinking(false);
       isProcessingRef.current = false;
     }
-  }, [getBestMove, bot.id]);
+  }, [getBestMove, bot.id, bot.openingMoves, moves]);
 
   // Bot moves first if player is black
   useEffect(() => {
