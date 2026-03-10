@@ -78,7 +78,7 @@ export const useStockfish = ({ skillLevel, moveTime = 500, depth, formula }: Use
             if (useFormula) {
               // MultiPV will be set dynamically per move in getBestMove
             } else {
-              const clamped = Math.max(0, skillLevel);
+              const clamped = Math.min(15, Math.max(0, skillLevel));
               worker.postMessage(`setoption name Skill Level value ${clamped}`);
             }
             worker.postMessage('setoption name Hash value 16');
