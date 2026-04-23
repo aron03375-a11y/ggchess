@@ -7,6 +7,7 @@ interface UseStockfishOptions {
   moveTime?: number;
   depth?: number;
   formula?: MittensFormula;
+  uciElo?: number;
 }
 
 interface MoveScore {
@@ -47,7 +48,7 @@ function selectMoveByFormula(moves: MoveScore[], formula: MittensFormula): strin
   return allowed[allowed.length - 1].move;
 }
 
-export const useStockfish = ({ skillLevel, moveTime = 500, depth, formula }: UseStockfishOptions) => {
+export const useStockfish = ({ skillLevel, moveTime = 500, depth, formula, uciElo }: UseStockfishOptions) => {
   const workerRef = useRef<Worker | null>(null);
   const resolverRef = useRef<((move: string | null) => void) | null>(null);
   const [isReady, setIsReady] = useState(false);
@@ -77,6 +78,11 @@ export const useStockfish = ({ skillLevel, moveTime = 500, depth, formula }: Use
           if (message === 'uciok') {
             if (useFormula) {
               // MultiPV will be set dynamically per move in getBestMove
+            } else if (uciElo && uciElo > 0) {
+              // Clamp to Stockfish 10 supported UCI_Elo range
+              const clampedElo = Math.max(1350, Math.min(2850, uciElo));
+              worker.postMessage('setoption name UCI_LimitStrength value true');
+              worker.postMessage(`setoption name UCI_Elo value ${clampedElo}`);
             } else {
               const clamped = Math.max(0, skillLevel);
               worker.postMessage(`setoption name Skill Level value ${clamped}`);
@@ -144,7 +150,7 @@ export const useStockfish = ({ skillLevel, moveTime = 500, depth, formula }: Use
     } catch (e) {
       console.error('Failed to create Stockfish worker:', e);
     }
-  }, [skillLevel, useFormula]);
+  }, [skillLevel, useFormula, uciElo]);
 
   useEffect(() => {
     restartCountRef.current = 0;
