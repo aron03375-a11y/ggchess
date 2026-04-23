@@ -13,7 +13,7 @@ interface BotDetailCardProps {
   onDeepBlueLevelChange?: (level: number) => void;
 }
 
-const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI'];
+const ROMAN = ['i', 'ii', 'iii', 'iv', 'v', 'vi'];
 
 export const BotDetailCard = ({
   bot,
