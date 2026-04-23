@@ -68,7 +68,7 @@ export const useStockfish = ({ skillLevel, moveTime = 500, depth, formula }: Use
       workerRef.current = null;
       setIsReady(false);
 
-      const worker = new Worker('/stockfish/love-7.0.js');
+      const worker = new Worker('/stockfish10/stockfish.js');
       workerRef.current = worker;
 
       worker.onmessage = (e: MessageEvent) => {
