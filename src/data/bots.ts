@@ -12,6 +12,7 @@ import coachAnna from '@/assets/coach-anna.jpeg';
 import coachDina from '@/assets/coach-dina.jpeg';
 import coachEric from '@/assets/coach-eric.jpeg';
 import coachGotham from '@/assets/coach-gotham.jpeg';
+import botDeepBlue from '@/assets/bot-deepblue.png';
 import { Bot } from '@/types/bot';
 
 export const aronBots: Bot[] = [
@@ -164,4 +165,75 @@ export const coachBots: Bot[] = [
   },
 ];
 
-export const allBots = [...aronBots, ...catBots, ...coachBots];
+// Deep Blue – 6 escalating levels (I → VI). Level VI uses UCI_LimitStrength at 2800.
+// The other levels are tuned to climb consistently and stay within Stockfish's UCI_Elo range (≥1320).
+export const deepBlueBots: Bot[] = [
+  {
+    id: 'deepblue-1',
+    name: 'Deep Blue I',
+    elo: 1400,
+    skillLevel: 3,
+    depth: 8,
+    image: botDeepBlue,
+    greeting: "Initializing... Level I online.",
+    category: 'deepblue',
+    uciElo: 1400,
+  },
+  {
+    id: 'deepblue-2',
+    name: 'Deep Blue II',
+    elo: 1700,
+    skillLevel: 6,
+    depth: 10,
+    image: botDeepBlue,
+    greeting: "Calculating variations. Level II.",
+    category: 'deepblue',
+    uciElo: 1700,
+  },
+  {
+    id: 'deepblue-3',
+    name: 'Deep Blue III',
+    elo: 2000,
+    skillLevel: 10,
+    depth: 12,
+    image: botDeepBlue,
+    greeting: "Pattern recognition active.",
+    category: 'deepblue',
+    uciElo: 2000,
+  },
+  {
+    id: 'deepblue-4',
+    name: 'Deep Blue IV',
+    elo: 2300,
+    skillLevel: 14,
+    depth: 14,
+    image: botDeepBlue,
+    greeting: "Strategic depth: maximal.",
+    category: 'deepblue',
+    uciElo: 2300,
+  },
+  {
+    id: 'deepblue-5',
+    name: 'Deep Blue V',
+    elo: 2550,
+    skillLevel: 17,
+    depth: 16,
+    image: botDeepBlue,
+    greeting: "Grandmaster protocols engaged.",
+    category: 'deepblue',
+    uciElo: 2550,
+  },
+  {
+    id: 'deepblue-6',
+    name: 'Deep Blue VI',
+    elo: 2800,
+    skillLevel: 20,
+    depth: 18,
+    image: botDeepBlue,
+    greeting: "Kasparov, prepare yourself.",
+    category: 'deepblue',
+    uciElo: 2800,
+  },
+];
+
+export const allBots = [...aronBots, ...catBots, ...coachBots, ...deepBlueBots];
