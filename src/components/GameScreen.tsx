@@ -47,7 +47,8 @@ export const GameScreen = ({
   } = useStockfish({
     skillLevel: bot.skillLevel,
     depth: bot.depth,
-    formula: bot.formula
+    formula: bot.formula,
+    uciElo: bot.uciElo,
   });
 
   // Display FEN based on viewing index

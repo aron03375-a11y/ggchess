@@ -1,5 +1,6 @@
 import { Bot } from '@/types/bot';
 import { Button } from '@/components/ui/button';
+import { Slider } from '@/components/ui/slider';
 import { ArrowLeft } from 'lucide-react';
 
 interface BotDetailCardProps {
@@ -8,9 +9,23 @@ interface BotDetailCardProps {
   onColorChange: (color: 'white' | 'black') => void;
   onPlay: () => void;
   onBack: () => void;
+  deepBlueLevel?: number;
+  onDeepBlueLevelChange?: (level: number) => void;
 }
 
-export const BotDetailCard = ({ bot, playerColor, onColorChange, onPlay, onBack }: BotDetailCardProps) => {
+const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI'];
+
+export const BotDetailCard = ({
+  bot,
+  playerColor,
+  onColorChange,
+  onPlay,
+  onBack,
+  deepBlueLevel,
+  onDeepBlueLevelChange,
+}: BotDetailCardProps) => {
+  const showLevelSlider = bot.category === 'deepblue' && deepBlueLevel && onDeepBlueLevelChange;
+
   return (
     <div className="bot-card-bg rounded-lg p-4 md:p-6 animate-in fade-in duration-300">
       <button
@@ -21,9 +36,9 @@ export const BotDetailCard = ({ bot, playerColor, onColorChange, onPlay, onBack 
         ← Back to bots
       </button>
       <div className="flex items-start gap-4 mb-6">
-        <img 
-          src={bot.image} 
-          alt={bot.name} 
+        <img
+          src={bot.image}
+          alt={bot.name}
           className="w-24 h-24 md:w-32 md:h-32 rounded-lg object-cover shadow-md"
         />
         <div className="flex flex-col gap-2">
@@ -37,6 +52,34 @@ export const BotDetailCard = ({ bot, playerColor, onColorChange, onPlay, onBack 
           </p>
         </div>
       </div>
+
+      {showLevelSlider && (
+        <div className="mb-6 px-1">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-nunito font-medium text-foreground/70">
+              Difficulty
+            </span>
+            <span className="text-sm font-fredoka font-bold text-accent">
+              Level {ROMAN[deepBlueLevel - 1]}
+            </span>
+          </div>
+          <Slider
+            value={[deepBlueLevel]}
+            min={1}
+            max={6}
+            step={1}
+            onValueChange={(v) => onDeepBlueLevelChange(v[0])}
+            className="w-full"
+          />
+          <div className="flex justify-between mt-1 px-0.5">
+            {ROMAN.map((r) => (
+              <span key={r} className="text-[10px] font-nunito text-foreground/50">
+                {r}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="flex justify-center gap-6 mb-6">
         <button
@@ -61,7 +104,7 @@ export const BotDetailCard = ({ bot, playerColor, onColorChange, onPlay, onBack 
         />
       </div>
 
-      <Button 
+      <Button
         onClick={onPlay}
         className="w-full py-6 text-xl font-fredoka font-bold bg-primary hover:bg-primary/90"
       >

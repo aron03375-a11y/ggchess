@@ -12,9 +12,10 @@ export interface Bot {
   depth?: number;
   image: string;
   greeting: string;
-  category: 'aron' | 'cat' | 'coach';
+  category: 'aron' | 'cat' | 'coach' | 'deepblue';
   formula?: MittensFormula; // If set, uses formula-based move selection
   openingMoves?: Record<string, string>; // Maps opponent's first move (SAN) to bot's response (SAN)
+  uciElo?: number; // If set, engine uses UCI_LimitStrength + UCI_Elo (Stockfish: 1320–3190)
 }
 
 export interface GameState {
