@@ -74,7 +74,7 @@ export const useStockfish = ({ skillLevel, moveTime = 500, depth, formula }: Use
       worker.onmessage = (e: MessageEvent) => {
         const message = e.data;
         if (typeof message === 'string') {
-          if (message === 'loveok') {
+          if (message === 'uciok') {
             if (useFormula) {
               // MultiPV will be set dynamically per move in getBestMove
             } else {
