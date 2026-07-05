@@ -1,6 +1,5 @@
 import { Bot } from '@/types/bot';
 import { Button } from '@/components/ui/button';
-import { Slider } from '@/components/ui/slider';
 import { ArrowLeft } from 'lucide-react';
 
 interface BotDetailCardProps {
@@ -9,11 +8,7 @@ interface BotDetailCardProps {
   onColorChange: (color: 'white' | 'black') => void;
   onPlay: () => void;
   onBack: () => void;
-  deepBlueLevel?: number;
-  onDeepBlueLevelChange?: (level: number) => void;
 }
-
-const ROMAN = ['i', 'ii', 'iii', 'iv', 'v', 'vi'];
 
 export const BotDetailCard = ({
   bot,
@@ -21,11 +16,7 @@ export const BotDetailCard = ({
   onColorChange,
   onPlay,
   onBack,
-  deepBlueLevel,
-  onDeepBlueLevelChange,
 }: BotDetailCardProps) => {
-  const showLevelSlider = bot.category === 'deepblue' && deepBlueLevel && onDeepBlueLevelChange;
-
   return (
     <div className="bot-card-bg rounded-lg p-4 md:p-6 animate-in fade-in duration-300">
       <button
@@ -52,34 +43,6 @@ export const BotDetailCard = ({
           </p>
         </div>
       </div>
-
-      {showLevelSlider && (
-        <div className="mb-6 px-1">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-nunito font-medium text-foreground/70">
-              Difficulty
-            </span>
-            <span className="text-sm font-fredoka font-bold text-accent">
-              Level {ROMAN[deepBlueLevel - 1]}
-            </span>
-          </div>
-          <Slider
-            value={[deepBlueLevel]}
-            min={1}
-            max={6}
-            step={1}
-            onValueChange={(v) => onDeepBlueLevelChange(v[0])}
-            className="w-full"
-          />
-          <div className="flex justify-between mt-1 px-0.5">
-            {ROMAN.map((r) => (
-              <span key={r} className="text-[10px] font-nunito text-foreground/50">
-                {r}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
 
       <div className="flex justify-center gap-6 mb-6">
         <button
