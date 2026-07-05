@@ -49,6 +49,7 @@ export const GameScreen = ({
     depth: bot.depth,
     formula: bot.formula,
     uciElo: bot.uciElo,
+    divisionLevel: bot.divisionLevel,
   });
 
   // Display FEN based on viewing index
