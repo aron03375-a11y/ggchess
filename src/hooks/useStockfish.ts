@@ -1,6 +1,7 @@
 import { useRef, useCallback, useEffect, useState } from 'react';
 import { MittensFormula } from '@/types/bot';
 import { Chess } from 'chess.js';
+import { chooseSkillMove, skillSettings, RootScore } from '@/lib/skillFormula';
 
 interface UseStockfishOptions {
   skillLevel: number;
@@ -8,6 +9,7 @@ interface UseStockfishOptions {
   depth?: number;
   formula?: MittensFormula;
   uciElo?: number;
+  divisionLevel?: number;
 }
 
 interface MoveScore {
@@ -23,18 +25,15 @@ function selectMoveByFormula(moves: MoveScore[], formula: MittensFormula): strin
   const bestScore = sorted[0].score;
   const bestMove = sorted[0].move;
 
-  // Compute loss and filter: allowed = moves where 0 < loss <= maxLoss
   const allowed = sorted
     .map(m => ({ move: m.move, loss: bestScore - m.score }))
     .filter(m => m.loss > 0 && m.loss <= formula.maxLoss);
 
-  // Roll to decide if we make a suboptimal move
   const r = Math.random();
   if (r > formula.suboptimalProb || allowed.length === 0) {
     return bestMove;
   }
 
-  // Pick from allowed using softmax weighted by temperature
   const T = formula.temperature;
   const weights = allowed.map(m => Math.exp(-m.loss / T));
   const totalWeight = weights.reduce((sum, w) => sum + w, 0);
@@ -48,7 +47,7 @@ function selectMoveByFormula(moves: MoveScore[], formula: MittensFormula): strin
   return allowed[allowed.length - 1].move;
 }
 
-export const useStockfish = ({ skillLevel, moveTime = 500, depth, formula, uciElo }: UseStockfishOptions) => {
+export const useStockfish = ({ skillLevel, moveTime = 500, depth, formula, uciElo, divisionLevel }: UseStockfishOptions) => {
   const workerRef = useRef<Worker | null>(null);
   const resolverRef = useRef<((move: string | null) => void) | null>(null);
   const [isReady, setIsReady] = useState(false);
@@ -56,7 +55,7 @@ export const useStockfish = ({ skillLevel, moveTime = 500, depth, formula, uciEl
   const maxRestarts = 5;
   const collectedMovesRef = useRef<MoveScore[]>([]);
   const useFormula = !!formula;
-  const fenRef = useRef<string>('');
+  const useDivision = typeof divisionLevel === 'number' && divisionLevel > 0;
 
   const initWorker = useCallback(() => {
     try {
@@ -76,10 +75,9 @@ export const useStockfish = ({ skillLevel, moveTime = 500, depth, formula, uciEl
         const message = e.data;
         if (typeof message === 'string') {
           if (message === 'uciok') {
-            if (useFormula) {
-              // MultiPV will be set dynamically per move in getBestMove
+            if (useFormula || useDivision) {
+              // MultiPV set per-move in getBestMove; full-strength engine otherwise.
             } else if (uciElo && uciElo > 0) {
-              // Clamp to Stockfish 10 supported UCI_Elo range
               const clampedElo = Math.max(1350, Math.min(2850, uciElo));
               worker.postMessage('setoption name UCI_LimitStrength value true');
               worker.postMessage(`setoption name UCI_Elo value ${clampedElo}`);
@@ -92,7 +90,7 @@ export const useStockfish = ({ skillLevel, moveTime = 500, depth, formula, uciEl
           } else if (message === 'readyok') {
             setIsReady(true);
             restartCountRef.current = 0;
-          } else if (useFormula && message.startsWith('info') && message.includes(' pv ')) {
+          } else if ((useFormula || useDivision) && message.startsWith('info') && message.includes(' pv ')) {
             const scoreMatch = message.match(/score cp (-?\d+)/);
             const mateMatch = message.match(/score mate (-?\d+)/);
             const pvMatch = message.match(/ pv (\S+)/);
@@ -113,10 +111,19 @@ export const useStockfish = ({ skillLevel, moveTime = 500, depth, formula, uciEl
               }
             }
           } else if (message.startsWith('bestmove')) {
-            if (useFormula && formula && collectedMovesRef.current.length > 0) {
-              const selectedMove = selectMoveByFormula(collectedMovesRef.current, formula);
+            const collected = collectedMovesRef.current;
+            if (useDivision && collected.length > 0) {
+              const picked = chooseSkillMove(collected as RootScore[], divisionLevel!);
+              console.log(`Skill div lvl ${divisionLevel}: picked ${picked?.move} from ${collected.length} lines`);
               if (resolverRef.current) {
-                console.log(`Mittens formula: selected ${selectedMove} from ${collectedMovesRef.current.length} total moves`);
+                resolverRef.current(picked?.move ?? null);
+                resolverRef.current = null;
+              }
+              collectedMovesRef.current = [];
+            } else if (useFormula && formula && collected.length > 0) {
+              const selectedMove = selectMoveByFormula(collected, formula);
+              if (resolverRef.current) {
+                console.log(`Mittens formula: selected ${selectedMove} from ${collected.length} total moves`);
                 resolverRef.current(selectedMove || null);
                 resolverRef.current = null;
               }
@@ -150,7 +157,7 @@ export const useStockfish = ({ skillLevel, moveTime = 500, depth, formula, uciEl
     } catch (e) {
       console.error('Failed to create Stockfish worker:', e);
     }
-  }, [skillLevel, useFormula, uciElo]);
+  }, [skillLevel, useFormula, useDivision, divisionLevel, uciElo]);
 
   useEffect(() => {
     restartCountRef.current = 0;
@@ -179,13 +186,18 @@ export const useStockfish = ({ skillLevel, moveTime = 500, depth, formula, uciEl
       collectedMovesRef.current = [];
 
       const isFormulaBot = useFormula && !!formula;
+      const isDivisionBot = useDivision;
       const formulaMoveTimeCap = isFormulaBot
         ? Math.max(1800, Math.min(4500, Math.max(moveTime, ((depth ?? 8) * 250))))
         : moveTime;
 
       try {
-        if (isFormulaBot) {
-          // Dynamically set MultiPV to exact number of legal moves
+        if (isDivisionBot) {
+          const tempGame = new Chess(fen);
+          const legalMoves = tempGame.moves().length;
+          const mpv = Math.max(1, legalMoves);
+          workerRef.current.postMessage(`setoption name MultiPV value ${mpv}`);
+        } else if (isFormulaBot) {
           const tempGame = new Chess(fen);
           const legalMoves = tempGame.moves().length;
           const mpv = Math.max(1, legalMoves);
@@ -195,8 +207,10 @@ export const useStockfish = ({ skillLevel, moveTime = 500, depth, formula, uciEl
         workerRef.current.postMessage(`position fen ${fen}`);
 
         let goCommand = '';
-        if (depth && isFormulaBot) {
-          // Keep depth target but hard-cap think time so Mittens responds faster
+        if (isDivisionBot) {
+          const s = skillSettings(divisionLevel!);
+          goCommand = `go depth ${s.depth}`;
+        } else if (depth && isFormulaBot) {
           goCommand = `go depth ${depth} movetime ${formulaMoveTimeCap}`;
         } else if (depth) {
           goCommand = `go depth ${depth}`;
@@ -210,32 +224,39 @@ export const useStockfish = ({ skillLevel, moveTime = 500, depth, formula, uciEl
         resolve(null);
       }
 
-      const timeoutMs = isFormulaBot
-        ? formulaMoveTimeCap + 2500
-        : depth
-          ? Math.max(10000, depth * 1500)
-          : 10000;
+      const timeoutMs = isDivisionBot
+        ? Math.max(8000, skillSettings(divisionLevel!).depth * 1500)
+        : isFormulaBot
+          ? formulaMoveTimeCap + 2500
+          : depth
+            ? Math.max(10000, depth * 1500)
+            : 10000;
 
       setTimeout(() => {
         if (resolverRef.current !== resolve) return;
+
+        if (isDivisionBot && collectedMovesRef.current.length > 0) {
+          const picked = chooseSkillMove(collectedMovesRef.current as RootScore[], divisionLevel!);
+          console.log(`Skill div timeout fallback lvl ${divisionLevel}: picked ${picked?.move}`);
+          collectedMovesRef.current = [];
+          resolverRef.current = null;
+          try { workerRef.current?.postMessage('stop'); } catch {}
+          resolve(picked?.move ?? null);
+          return;
+        }
 
         if (isFormulaBot && formula && collectedMovesRef.current.length > 0) {
           const selectedMove = selectMoveByFormula(collectedMovesRef.current, formula);
           console.log(`Mittens timeout fallback: selected ${selectedMove} from ${collectedMovesRef.current.length} partial moves`);
           collectedMovesRef.current = [];
           resolverRef.current = null;
-          try {
-            workerRef.current?.postMessage('stop');
-          } catch {}
+          try { workerRef.current?.postMessage('stop'); } catch {}
           resolve(selectedMove || null);
           return;
         }
 
-        try {
-          workerRef.current?.postMessage('stop');
-        } catch {}
+        try { workerRef.current?.postMessage('stop'); } catch {}
 
-        // Give engine a short grace period to emit bestmove after stop
         setTimeout(() => {
           if (resolverRef.current === resolve) {
             resolverRef.current = null;
@@ -244,7 +265,7 @@ export const useStockfish = ({ skillLevel, moveTime = 500, depth, formula, uciEl
         }, 1200);
       }, timeoutMs);
     });
-  }, [moveTime, depth, isReady, useFormula, formula]);
+  }, [moveTime, depth, isReady, useFormula, formula, useDivision, divisionLevel]);
 
   return { getBestMove, isReady };
 };
