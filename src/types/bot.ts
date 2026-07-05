@@ -1,21 +1,27 @@
 export interface MittensFormula {
-  maxLoss: number;       // Max centipawn loss for allowed moves
-  temperature: number;   // Softmax temperature
-  suboptimalProb: number; // Probability of picking a suboptimal move
+  maxLoss: number;
+  temperature: number;
+  suboptimalProb: number;
 }
 
 export interface Bot {
   id: string;
   name: string;
   elo: number;
-  skillLevel: number; // Stockfish skill level 0-20 (ignored for formula bots)
+  skillLevel: number; // legacy Stockfish skill level (unused when divisionLevel is set)
   depth?: number;
   image: string;
   greeting: string;
-  category: 'aron' | 'cat' | 'coach' | 'deepblue';
-  formula?: MittensFormula; // If set, uses formula-based move selection
-  openingMoves?: Record<string, string>; // Maps opponent's first move (SAN) to bot's response (SAN)
-  uciElo?: number; // If set, engine uses UCI_LimitStrength + UCI_Elo (Stockfish: 1320–3190)
+  category: 'aron';
+  formula?: MittensFormula;
+  openingMoves?: Record<string, string>;
+  uciElo?: number;
+  /**
+   * Division-based skill level (1-25) from src/lib/skillFormula.ts.
+   * When set, engine runs full-strength MultiPV and picker chooses among
+   * moves within maxLoss cp of the best.
+   */
+  divisionLevel?: number;
 }
 
 export interface GameState {
