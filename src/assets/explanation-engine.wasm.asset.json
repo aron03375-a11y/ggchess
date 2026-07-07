@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "asset_id": "3e96255c-5e82-40af-b2c1-7c7559f1ffc5",
+  "project_id": "ddcd45d3-df7d-4965-99b9-862744fe1137",
+  "url": "/__l5e/assets-v1/3e96255c-5e82-40af-b2c1-7c7559f1ffc5/explanation-engine.wasm",
+  "r2_key": "a/v1/ddcd45d3-df7d-4965-99b9-862744fe1137/3e96255c-5e82-40af-b2c1-7c7559f1ffc5/explanation-engine.wasm",
+  "original_filename": "explanation-engine.wasm",
+  "size": 13986847,
+  "content_type": "application/wasm",
+  "created_at": "2026-07-07T09:03:36Z"
+}
