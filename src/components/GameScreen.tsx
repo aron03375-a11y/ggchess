@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, RotateCcw, Flag } from 'lucide-react';
 import { toast } from 'sonner';
 import { useStockfish } from '@/hooks/useStockfish';
+import { useKomodo } from '@/hooks/useKomodo';
 interface GameScreenProps {
   bot: Bot;
   playerColor: 'white' | 'black';
