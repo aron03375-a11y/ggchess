@@ -15,10 +15,10 @@ export default defineConfig(({ mode }) => ({
     mode === "development" && componentTagger(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["favicon.ico", "stockfish/stockfish-17.1-lite-single.js", "stockfish/stockfish-17.1-lite-single.wasm"],
+      includeAssets: ["favicon.ico", "stockfish/stockfish-17.1-lite-single.js", "stockfish/stockfish-17.1-lite-single.wasm", "komodo/explanation-engine.js", "komodo/komodo-worker.js"],
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,wasm}"],
-        maximumFileSizeToCacheInBytes: 10 * 1024 * 1024,
+        maximumFileSizeToCacheInBytes: 20 * 1024 * 1024,
       },
       manifest: {
         name: "GG.chess",
