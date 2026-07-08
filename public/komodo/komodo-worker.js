@@ -13,7 +13,7 @@
 self.__WB_pmw = self.__WB_pmw || function (o) { this.__WB_source = o; return this; };
 
 // Pre-set Module hints in case the factory reads them (Emscripten MODULARIZE).
-var wasmURL = decodeURIComponent(self.location.hash.slice(1));
+var wasmURL = self.location.hash.slice(1);
 self.Module = {
   wasmBinaryFile: wasmURL,
   locateFile: function (path) { return path.endsWith('.wasm') ? wasmURL : path; },
