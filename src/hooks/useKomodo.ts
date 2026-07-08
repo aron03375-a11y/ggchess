@@ -29,10 +29,10 @@ export const useKomodo = ({ uciElo, moveTime = 1200, depth }: UseKomodoOptions) 
       workerRef.current = null;
       setIsReady(false);
 
-      // Loader reads self.location.hash raw. Pass the wasm URL encoded so
-      // slashes survive; the loader's URL fetch handles the encoded form.
+      // Loader reads self.location.hash raw (substr(1)). Pass the wasm URL as-is
+      // — encoding '/' as %2F makes the fetch hit a bogus path that returns HTML.
       const wasmUrl = (wasmAsset as { url: string }).url;
-      const worker = new Worker(`/komodo/komodo-worker.js#${encodeURIComponent(wasmUrl)}`);
+      const worker = new Worker(`/komodo/komodo-worker.js#${wasmUrl}`);
       workerRef.current = worker;
 
       worker.onmessage = (e: MessageEvent) => {
