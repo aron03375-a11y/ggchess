@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import wasmAsset from '@/assets/explanation-engine.wasm.asset.json';
 
 interface UseKomodoOptions {
-  /** UCI_Elo target in [1, 3500]. When set, Use UCI_Elo is enabled. */
+  /** Komodo UCI Elo target in [1, 3500]. Komodo maps this to internal skill automatically. */
   uciElo?: number;
   /** Optional fixed movetime ms. Defaults to 1200ms. */
   moveTime?: number;
@@ -12,7 +12,8 @@ interface UseKomodoOptions {
 
 /**
  * Runs chess.com's Komodo TEP wasm in a Web Worker and returns UCI bestmoves.
- * Uses Komodo's built-in Skill / UCI_Elo dialing — no external picker.
+ * Uses Komodo's built-in UCI Elo dialing — no external picker.
+ * This TEP build reports classic Skill as 1–35, but Elo mode is still 1–3500.
  */
 export const useKomodo = ({ uciElo, moveTime = 1200, depth }: UseKomodoOptions) => {
   const workerRef = useRef<Worker | null>(null);
@@ -44,8 +45,12 @@ export const useKomodo = ({ uciElo, moveTime = 1200, depth }: UseKomodoOptions) 
           worker.postMessage('setoption name MultiPV value 1');
           if (typeof uciElo === 'number' && uciElo > 0) {
             const elo = Math.max(1, Math.min(3500, Math.round(uciElo)));
-            worker.postMessage('setoption name Use UCI_Elo value true');
-            worker.postMessage(`setoption name UCI_Elo value ${elo}`);
+            // Exact option names exposed by this Komodo TEP build:
+            //   option name UCI Elo type spin default 3500 min 1 max 3500
+            //   option name UCI LimitStrength type check default false
+            // It also exposes "Use UCI_Elo", but "UCI_Elo" itself is not accepted.
+            worker.postMessage('setoption name UCI LimitStrength value true');
+            worker.postMessage(`setoption name UCI Elo value ${elo}`);
           }
           worker.postMessage('ucinewgame');
           worker.postMessage('isready');
