@@ -20,6 +20,7 @@ export const useKomodo = ({ uciElo, moveTime = 1200, depth }: UseKomodoOptions) 
   const resolverRef = useRef<((move: string | null) => void) | null>(null);
   const [isReady, setIsReady] = useState(false);
   const readyRef = useRef(false);
+  const readyWaitersRef = useRef<(() => void)[]>([]);
   const restartCountRef = useRef(0);
   const wasmCandidateIndexRef = useRef(0);
   const maxRestarts = 3;
@@ -80,6 +81,7 @@ export const useKomodo = ({ uciElo, moveTime = 1200, depth }: UseKomodoOptions) 
           readyRef.current = true;
           setIsReady(true);
           restartCountRef.current = 0;
+          readyWaitersRef.current.splice(0).forEach((resolveReady) => resolveReady());
         } else if (line.startsWith('bestmove')) {
           const m = line.match(/bestmove\s+(\S+)/);
           const best = m ? m[1] : null;
@@ -119,13 +121,34 @@ export const useKomodo = ({ uciElo, moveTime = 1200, depth }: UseKomodoOptions) 
         workerRef.current = null;
       }
       readyRef.current = false;
+      readyWaitersRef.current.splice(0).forEach((resolveReady) => resolveReady());
       setIsReady(false);
     };
   }, [init]);
 
-  const getBestMove = useCallback((fen: string): Promise<string | null> => {
+  const waitUntilReady = useCallback((timeoutMs = 20000): Promise<boolean> => {
+    if (workerRef.current && readyRef.current) return Promise.resolve(true);
+
     return new Promise((resolve) => {
-      if (!workerRef.current || !isReady) { resolve(null); return; }
+      const timeout = window.setTimeout(() => {
+        readyWaitersRef.current = readyWaitersRef.current.filter((waiter) => waiter !== resolveReady);
+        resolve(false);
+      }, timeoutMs);
+
+      const resolveReady = () => {
+        window.clearTimeout(timeout);
+        resolve(!!workerRef.current && readyRef.current);
+      };
+
+      readyWaitersRef.current.push(resolveReady);
+    });
+  }, []);
+
+  const getBestMove = useCallback(async (fen: string): Promise<string | null> => {
+    const ready = await waitUntilReady();
+    if (!workerRef.current || !ready) return null;
+
+    return new Promise((resolve) => {
       resolverRef.current = resolve;
       try {
         workerRef.current.postMessage(`position fen ${fen}`);
@@ -147,7 +170,7 @@ export const useKomodo = ({ uciElo, moveTime = 1200, depth }: UseKomodoOptions) 
         }
       }, timeoutMs);
     });
-  }, [isReady, moveTime, depth]);
+  }, [moveTime, depth, waitUntilReady]);
 
   return { getBestMove, isReady };
 };
