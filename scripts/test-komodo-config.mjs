@@ -8,7 +8,12 @@ const asset = JSON.parse(readFileSync('src/assets/explanation-engine.wasm.asset.
 assert.match(hook, /setoption name UCI LimitStrength value true/);
 assert.match(hook, /setoption name UCI Elo value/);
 assert.doesNotMatch(hook, /setoption name UCI_Elo value/);
+assert.match(hook, /ggchess\.lovable\.app/);
+assert.match(hook, /new Worker\(`\/komodo\/komodo-worker\.js#\$\{wasmUrl\}`\)/);
+assert.doesNotMatch(hook, /encodeURIComponent\(wasmUrl\)/);
 assert.match(worker, /decodeURIComponent\(self\.location\.hash\.slice\(1\)\)/);
+assert.match(worker, /wasmBinaryFile: wasmURL/);
+assert.match(hook, /TEP build reports classic Skill as/);
 assert.equal(asset.content_type, 'application/wasm');
 assert.equal(asset.size, 13_986_847);
 

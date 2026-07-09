@@ -19,8 +19,29 @@ export const useKomodo = ({ uciElo, moveTime = 1200, depth }: UseKomodoOptions) 
   const workerRef = useRef<Worker | null>(null);
   const resolverRef = useRef<((move: string | null) => void) | null>(null);
   const [isReady, setIsReady] = useState(false);
+  const readyRef = useRef(false);
+  const readyWaitersRef = useRef<(() => void)[]>([]);
   const restartCountRef = useRef(0);
+  const wasmCandidateIndexRef = useRef(0);
   const maxRestarts = 3;
+
+  const getWasmCandidates = useCallback(() => {
+    const assetPath = (wasmAsset as { url: string }).url;
+    const sameOrigin = new URL(assetPath, window.location.origin).href;
+    const hosted = [
+      `https://ggchess.lovable.app${assetPath}`,
+      `https://id-preview--ddcd45d3-df7d-4965-99b9-862744fe1137.lovable.app${assetPath}`,
+    ];
+
+    // Lovable's /__l5e asset route is available on deployed/preview origins,
+    // but not on localhost. Use the hosted asset first during local testing so
+    // the real browser worker can be verified from the dev server too.
+    const candidates = window.location.hostname === 'localhost'
+      ? [...hosted, sameOrigin]
+      : [sameOrigin, ...hosted];
+
+    return Array.from(new Set(candidates));
+  }, []);
 
   const init = useCallback(() => {
     try {
@@ -28,11 +49,13 @@ export const useKomodo = ({ uciElo, moveTime = 1200, depth }: UseKomodoOptions) 
         try { workerRef.current.postMessage('quit'); workerRef.current.terminate(); } catch {}
       }
       workerRef.current = null;
+      readyRef.current = false;
       setIsReady(false);
 
-      // Loader reads self.location.hash raw (substr(1)). Pass the wasm URL as-is
-      // — encoding '/' as %2F makes the fetch hit a bogus path that returns HTML.
-      const wasmUrl = (wasmAsset as { url: string }).url;
+      // Loader reads self.location.hash raw (substr(1)). Pass the wasm URL as-is;
+      // encoding '/' as %2F makes some browsers fetch HTML/404 instead of WASM.
+      const wasmCandidates = getWasmCandidates();
+      const wasmUrl = wasmCandidates[wasmCandidateIndexRef.current] ?? wasmCandidates[0];
       const worker = new Worker(`/komodo/komodo-worker.js#${wasmUrl}`);
       workerRef.current = worker;
 
@@ -55,8 +78,10 @@ export const useKomodo = ({ uciElo, moveTime = 1200, depth }: UseKomodoOptions) 
           worker.postMessage('ucinewgame');
           worker.postMessage('isready');
         } else if (line.startsWith('readyok')) {
+          readyRef.current = true;
           setIsReady(true);
           restartCountRef.current = 0;
+          readyWaitersRef.current.splice(0).forEach((resolveReady) => resolveReady());
         } else if (line.startsWith('bestmove')) {
           const m = line.match(/bestmove\s+(\S+)/);
           const best = m ? m[1] : null;
@@ -70,6 +95,12 @@ export const useKomodo = ({ uciElo, moveTime = 1200, depth }: UseKomodoOptions) 
       worker.onerror = (err) => {
         console.error('Komodo worker error:', err);
         if (resolverRef.current) { resolverRef.current(null); resolverRef.current = null; }
+        const wasmCandidates = getWasmCandidates();
+        if (!readyRef.current && wasmCandidateIndexRef.current < wasmCandidates.length - 1) {
+          wasmCandidateIndexRef.current++;
+          setTimeout(() => init(), 250);
+          return;
+        }
         if (restartCountRef.current < maxRestarts) {
           restartCountRef.current++;
           setTimeout(() => init(), 500);
@@ -80,7 +111,7 @@ export const useKomodo = ({ uciElo, moveTime = 1200, depth }: UseKomodoOptions) 
     } catch (e) {
       console.error('Failed to start Komodo worker:', e);
     }
-  }, [uciElo]);
+  }, [uciElo, getWasmCandidates]);
 
   useEffect(() => {
     init();
@@ -89,13 +120,35 @@ export const useKomodo = ({ uciElo, moveTime = 1200, depth }: UseKomodoOptions) 
         try { workerRef.current.postMessage('quit'); workerRef.current.terminate(); } catch {}
         workerRef.current = null;
       }
+      readyRef.current = false;
+      readyWaitersRef.current.splice(0).forEach((resolveReady) => resolveReady());
       setIsReady(false);
     };
   }, [init]);
 
-  const getBestMove = useCallback((fen: string): Promise<string | null> => {
+  const waitUntilReady = useCallback((timeoutMs = 20000): Promise<boolean> => {
+    if (workerRef.current && readyRef.current) return Promise.resolve(true);
+
     return new Promise((resolve) => {
-      if (!workerRef.current || !isReady) { resolve(null); return; }
+      const timeout = window.setTimeout(() => {
+        readyWaitersRef.current = readyWaitersRef.current.filter((waiter) => waiter !== resolveReady);
+        resolve(false);
+      }, timeoutMs);
+
+      const resolveReady = () => {
+        window.clearTimeout(timeout);
+        resolve(!!workerRef.current && readyRef.current);
+      };
+
+      readyWaitersRef.current.push(resolveReady);
+    });
+  }, []);
+
+  const getBestMove = useCallback(async (fen: string): Promise<string | null> => {
+    const ready = await waitUntilReady();
+    if (!workerRef.current || !ready) return null;
+
+    return new Promise((resolve) => {
       resolverRef.current = resolve;
       try {
         workerRef.current.postMessage(`position fen ${fen}`);
@@ -117,7 +170,7 @@ export const useKomodo = ({ uciElo, moveTime = 1200, depth }: UseKomodoOptions) 
         }
       }, timeoutMs);
     });
-  }, [isReady, moveTime, depth]);
+  }, [moveTime, depth, waitUntilReady]);
 
   return { getBestMove, isReady };
 };
