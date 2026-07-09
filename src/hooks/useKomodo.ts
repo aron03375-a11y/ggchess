@@ -19,6 +19,7 @@ export const useKomodo = ({ uciElo, moveTime = 1200, depth }: UseKomodoOptions) 
   const workerRef = useRef<Worker | null>(null);
   const resolverRef = useRef<((move: string | null) => void) | null>(null);
   const [isReady, setIsReady] = useState(false);
+  const readyRef = useRef(false);
   const restartCountRef = useRef(0);
   const wasmCandidateIndexRef = useRef(0);
   const maxRestarts = 3;
@@ -47,6 +48,7 @@ export const useKomodo = ({ uciElo, moveTime = 1200, depth }: UseKomodoOptions) 
         try { workerRef.current.postMessage('quit'); workerRef.current.terminate(); } catch {}
       }
       workerRef.current = null;
+      readyRef.current = false;
       setIsReady(false);
 
       // Loader reads self.location.hash raw (substr(1)). Pass the wasm URL as-is;
@@ -75,6 +77,7 @@ export const useKomodo = ({ uciElo, moveTime = 1200, depth }: UseKomodoOptions) 
           worker.postMessage('ucinewgame');
           worker.postMessage('isready');
         } else if (line.startsWith('readyok')) {
+          readyRef.current = true;
           setIsReady(true);
           restartCountRef.current = 0;
         } else if (line.startsWith('bestmove')) {
@@ -91,7 +94,7 @@ export const useKomodo = ({ uciElo, moveTime = 1200, depth }: UseKomodoOptions) 
         console.error('Komodo worker error:', err);
         if (resolverRef.current) { resolverRef.current(null); resolverRef.current = null; }
         const wasmCandidates = getWasmCandidates();
-        if (!isReady && wasmCandidateIndexRef.current < wasmCandidates.length - 1) {
+        if (!readyRef.current && wasmCandidateIndexRef.current < wasmCandidates.length - 1) {
           wasmCandidateIndexRef.current++;
           setTimeout(() => init(), 250);
           return;
@@ -106,7 +109,7 @@ export const useKomodo = ({ uciElo, moveTime = 1200, depth }: UseKomodoOptions) 
     } catch (e) {
       console.error('Failed to start Komodo worker:', e);
     }
-  }, [uciElo, getWasmCandidates, isReady]);
+  }, [uciElo, getWasmCandidates]);
 
   useEffect(() => {
     init();
@@ -115,6 +118,7 @@ export const useKomodo = ({ uciElo, moveTime = 1200, depth }: UseKomodoOptions) 
         try { workerRef.current.postMessage('quit'); workerRef.current.terminate(); } catch {}
         workerRef.current = null;
       }
+      readyRef.current = false;
       setIsReady(false);
     };
   }, [init]);
