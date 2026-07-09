@@ -13,7 +13,7 @@ assert.match(hook, /new Worker\(`\/komodo\/komodo-worker\.js#\$\{wasmUrl\}`\)/);
 assert.doesNotMatch(hook, /encodeURIComponent\(wasmUrl\)/);
 assert.match(worker, /decodeURIComponent\(self\.location\.hash\.slice\(1\)\)/);
 assert.match(worker, /wasmBinaryFile: wasmURL/);
-assert.match(hook, /Komodo TEP build reports classic Skill as/);
+assert.match(hook, /TEP build reports classic Skill as/);
 assert.equal(asset.content_type, 'application/wasm');
 assert.equal(asset.size, 13_986_847);
 
