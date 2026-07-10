@@ -13,7 +13,7 @@ interface UseKomodoOptions {
 /**
  * Runs chess.com's Komodo TEP wasm in a Web Worker and returns UCI bestmoves.
  * Uses Komodo's built-in UCI Elo dialing — no external picker.
- * This TEP build reports classic Skill as 1–35, but Elo mode is still 1–3500.
+ * This TEP build exposes classic Skill as 1–35 and UCI Elo as 1–3500.
  */
 export const useKomodo = ({ uciElo, moveTime = 1200, depth }: UseKomodoOptions) => {
   const workerRef = useRef<Worker | null>(null);
@@ -52,31 +52,69 @@ export const useKomodo = ({ uciElo, moveTime = 1200, depth }: UseKomodoOptions) 
       readyRef.current = false;
       setIsReady(false);
 
-      // Loader reads self.location.hash raw (substr(1)). Pass the wasm URL as-is;
-      // encoding '/' as %2F makes some browsers fetch HTML/404 instead of WASM.
       const wasmCandidates = getWasmCandidates();
-      const wasmUrl = wasmCandidates[wasmCandidateIndexRef.current] ?? wasmCandidates[0];
-      const worker = new Worker(`/komodo/komodo-worker.js#${wasmUrl}`);
+      const orderedWasmCandidates = [
+        ...wasmCandidates.slice(wasmCandidateIndexRef.current),
+        ...wasmCandidates.slice(0, wasmCandidateIndexRef.current),
+      ];
+      const workerPayload = encodeURIComponent(JSON.stringify(orderedWasmCandidates));
+      const worker = new Worker(`/komodo/komodo-worker.js#${workerPayload}`);
       workerRef.current = worker;
 
+      const postUci = (command: string) => {
+        if (
+          command === 'uci' ||
+          command === 'isready' ||
+          command === 'ucinewgame' ||
+          command.startsWith('setoption') ||
+          command.startsWith('position') ||
+          command.startsWith('go ')
+        ) {
+          console.debug(`[Komodo UCI] <= ${command}`);
+        }
+        worker.postMessage(command);
+      };
+
       worker.onmessage = (e: MessageEvent) => {
+        if (e.data && typeof e.data === 'object' && 'error' in e.data) {
+          console.error('Komodo worker message error:', e.data.error);
+          if (resolverRef.current) {
+            resolverRef.current(null);
+            resolverRef.current = null;
+          }
+          return;
+        }
+
         const line = typeof e.data === 'string' ? e.data : String(e.data);
+        if (
+          line.startsWith('uciok') ||
+          line.startsWith('readyok') ||
+          line.startsWith('bestmove') ||
+          /option name (UCI Elo|UCI LimitStrength|Use UCI_Elo|Auto Skill|Skill)\b/.test(line)
+        ) {
+          console.debug(`[Komodo UCI] => ${line}`);
+        }
+
         if (line.startsWith('uciok')) {
           // Configure engine
-          worker.postMessage('setoption name Threads value 1');
-          worker.postMessage('setoption name Hash value 16');
-          worker.postMessage('setoption name MultiPV value 1');
+          postUci('setoption name Threads value 1');
+          postUci('setoption name Hash value 16');
+          postUci('setoption name MultiPV value 1');
           if (typeof uciElo === 'number' && uciElo > 0) {
             const elo = Math.max(1, Math.min(3500, Math.round(uciElo)));
             // Exact option names exposed by this Komodo TEP build:
             //   option name UCI Elo type spin default 3500 min 1 max 3500
             //   option name UCI LimitStrength type check default false
-            // It also exposes "Use UCI_Elo", but "UCI_Elo" itself is not accepted.
-            worker.postMessage('setoption name UCI LimitStrength value true');
-            worker.postMessage(`setoption name UCI Elo value ${elo}`);
+            //   option name Use UCI_Elo type check default false
+            //   option name Auto Skill type check default false
+            // "UCI_Elo" itself is not accepted; the space form is.
+            postUci('setoption name UCI LimitStrength value true');
+            postUci('setoption name Use UCI_Elo value true');
+            postUci('setoption name Auto Skill value true');
+            postUci(`setoption name UCI Elo value ${elo}`);
           }
-          worker.postMessage('ucinewgame');
-          worker.postMessage('isready');
+          postUci('ucinewgame');
+          postUci('isready');
         } else if (line.startsWith('readyok')) {
           readyRef.current = true;
           setIsReady(true);
@@ -107,7 +145,7 @@ export const useKomodo = ({ uciElo, moveTime = 1200, depth }: UseKomodoOptions) 
         }
       };
 
-      worker.postMessage('uci');
+      postUci('uci');
     } catch (e) {
       console.error('Failed to start Komodo worker:', e);
     }
@@ -151,8 +189,12 @@ export const useKomodo = ({ uciElo, moveTime = 1200, depth }: UseKomodoOptions) 
     return new Promise((resolve) => {
       resolverRef.current = resolve;
       try {
-        workerRef.current.postMessage(`position fen ${fen}`);
-        workerRef.current.postMessage(depth ? `go depth ${depth}` : `go movetime ${moveTime}`);
+        const positionCommand = `position fen ${fen}`;
+        const goCommand = depth ? `go depth ${depth}` : `go movetime ${moveTime}`;
+        console.debug(`[Komodo UCI] <= ${positionCommand}`);
+        console.debug(`[Komodo UCI] <= ${goCommand}`);
+        workerRef.current.postMessage(positionCommand);
+        workerRef.current.postMessage(goCommand);
       } catch {
         resolverRef.current = null;
         resolve(null);

@@ -9,7 +9,8 @@
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test:engines": "node scripts/test-komodo-config.mjs"
+    "test:engines": "node scripts/test-komodo-config.mjs",
+    "test:komodo-browser": "python3 scripts/test-komodo-browser.py"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
