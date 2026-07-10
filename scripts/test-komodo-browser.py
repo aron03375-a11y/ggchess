@@ -34,10 +34,12 @@ async def main():
             await page.mouse.click(x, y)
             await page.wait_for_timeout(150)
 
-        await page.wait_for_function(
-            "() => Array.from(document.querySelectorAll('*')).some(el => /^1\\.\\s*e4\\s+\\S+/.test(el.textContent || ''))",
-            timeout=15000,
-        )
+        for _ in range(60):
+            if "Bot played:" in "\n".join(console_lines):
+                break
+            await page.wait_for_timeout(250)
+        else:
+            raise AssertionError("Komodo did not return and apply a move")
 
         body_text = await page.locator("body").inner_text()
         assert "e4" in body_text, "Player move was not recorded"
