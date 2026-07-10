@@ -70,7 +70,7 @@ export const useKomodo = ({ uciElo, moveTime = 1200, depth }: UseKomodoOptions) 
           command.startsWith('position') ||
           command.startsWith('go ')
         ) {
-          console.debug(`[Komodo UCI] <= ${command}`);
+          console.log(`[Komodo UCI] <= ${command}`);
         }
         worker.postMessage(command);
       };
@@ -92,7 +92,7 @@ export const useKomodo = ({ uciElo, moveTime = 1200, depth }: UseKomodoOptions) 
           line.startsWith('bestmove') ||
           /option name (UCI Elo|UCI LimitStrength|Use UCI_Elo|Auto Skill|Skill)\b/.test(line)
         ) {
-          console.debug(`[Komodo UCI] => ${line}`);
+          console.log(`[Komodo UCI] => ${line}`);
         }
 
         if (line.startsWith('uciok')) {
@@ -191,8 +191,8 @@ export const useKomodo = ({ uciElo, moveTime = 1200, depth }: UseKomodoOptions) 
       try {
         const positionCommand = `position fen ${fen}`;
         const goCommand = depth ? `go depth ${depth}` : `go movetime ${moveTime}`;
-        console.debug(`[Komodo UCI] <= ${positionCommand}`);
-        console.debug(`[Komodo UCI] <= ${goCommand}`);
+        console.log(`[Komodo UCI] <= ${positionCommand}`);
+        console.log(`[Komodo UCI] <= ${goCommand}`);
         workerRef.current.postMessage(positionCommand);
         workerRef.current.postMessage(goCommand);
       } catch {
