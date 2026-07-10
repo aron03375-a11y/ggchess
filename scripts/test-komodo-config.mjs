@@ -13,7 +13,7 @@ assert.doesNotMatch(hook, /setoption name UCI_Elo value/);
 assert.match(hook, /ggchess\.lovable\.app/);
 assert.match(hook, /JSON\.stringify\(orderedWasmCandidates\)/);
 assert.match(hook, /new Worker\(`\/komodo\/komodo-worker\.js#\$\{workerPayload\}`\)/);
-assert.match(worker, /decodeURIComponent\(self\.location\.hash\.slice\(1\)\)/);
+assert.match(worker, /decodeURIComponent\(raw\)/);
 assert.match(worker, /startsWithWasmMagic/);
 assert.match(worker, /self\.__KOMODO_WASM_URL/);
 assert.match(worker, /wasmBinaryFile: wasmURL/);
