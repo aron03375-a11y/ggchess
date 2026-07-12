@@ -51,7 +51,12 @@ export const MoveHistory = ({
     }, 0);
   };
 
-  const goTo = (v: ViewState) => onNavigate(v);
+  const goTo = (v: ViewState) => {
+    // Support legacy callers that only accept a mainline index/null.
+    (onNavigate as (arg: ViewState | number | null) => void)(
+      v.varId === null ? v.index : v
+    );
+  };
 
   // Navigation: back/forward operate on the currently viewed line
   const currentLineMoves = view.varId === null
