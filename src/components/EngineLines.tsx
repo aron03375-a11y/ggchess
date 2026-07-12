@@ -103,17 +103,23 @@ export const EngineLines = ({
       </div>
       
       <div className="divide-y divide-border">
-        {lines.map((line, index) => {
-          const pvSan = pvToSan(line.pv, fen);
-          
+        {Array.from({ length: 2 }).map((_, index) => {
+          const line = lines[index];
+          const pvSan = line ? pvToSan(line.pv, fen) : [];
           return (
-            <div 
+            <div
               key={index}
-              className="flex items-center gap-2 px-2 py-1.5 hover:bg-muted/50 cursor-pointer transition-colors"
-              onClick={() => handlePlayLine(line.pv)}
+              className="flex items-center gap-2 px-2 py-1.5 h-9 hover:bg-muted/50 cursor-pointer transition-colors"
+              onClick={() => line && handlePlayLine(line.pv)}
             >
-              <span className={`text-xs font-mono font-bold px-1.5 py-0.5 rounded ${getEvalColor(line.evaluation, line.isMate, line.mateIn)}`}>
-                {formatEvaluation(line.evaluation, line.isMate, line.mateIn)}
+              <span
+                className={`text-xs font-mono font-bold px-1.5 py-0.5 rounded ${
+                  line
+                    ? getEvalColor(line.evaluation, line.isMate, line.mateIn)
+                    : 'bg-zinc-700 text-white opacity-40'
+                }`}
+              >
+                {line ? formatEvaluation(line.evaluation, line.isMate, line.mateIn) : '0.00'}
               </span>
               <span className="text-sm text-muted-foreground font-mono truncate flex-1">
                 {pvSan.length > 0 ? pvSan.slice(0, 10).join(' ') : 'Calculating...'}
@@ -121,12 +127,6 @@ export const EngineLines = ({
             </div>
           );
         })}
-        
-        {lines.length === 0 && (
-          <div className="px-3 py-2 text-sm text-muted-foreground italic">
-            Calculating...
-          </div>
-        )}
       </div>
     </div>
   );

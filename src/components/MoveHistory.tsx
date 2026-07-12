@@ -4,106 +4,161 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
-interface MoveHistoryProps {
+export interface Variation {
+  id: number;
+  branchIndex: number; // index in mainline `moves` that this variation replaces
   moves: string[];
-  viewingIndex: number | null;
-  onNavigate: (index: number | null) => void;
 }
 
-export const MoveHistory = ({ moves, viewingIndex, onNavigate }: MoveHistoryProps) => {
+export interface ViewState {
+  varId: number | null; // null = mainline
+  index: number | null; // null = live end of mainline; -1 = start position; else moves index within that line
+}
+
+interface MoveHistoryProps {
+  moves: string[];
+  variations?: Variation[];
+  viewing?: ViewState;
+  // Legacy prop kept for compatibility (mainline only): index into mainline moves
+  viewingIndex?: number | null;
+  onNavigate: ((view: ViewState) => void) | ((index: number | null) => void);
+}
+
+export const MoveHistory = ({
+  moves,
+  variations = [],
+  viewing,
+  viewingIndex,
+  onNavigate,
+}: MoveHistoryProps) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const touchHandledRef = useRef(false);
-  
-  const movePairs: { number: number; white: string; black?: string }[] = [];
-  
-  for (let i = 0; i < moves.length; i += 2) {
-    movePairs.push({
-      number: Math.floor(i / 2) + 1,
-      white: moves[i],
-      black: moves[i + 1],
-    });
-  }
 
-  // Auto-scroll to bottom when new moves are added
+  // Normalize view state (support legacy viewingIndex prop)
+  const view: ViewState = viewing ?? { varId: null, index: viewingIndex ?? null };
+
+  // Auto-scroll when new moves added and viewing live
   useEffect(() => {
-    if (scrollRef.current && viewingIndex === null) {
+    if (scrollRef.current && view.varId === null && view.index === null) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [moves.length, viewingIndex]);
-
-  const currentIndex = viewingIndex ?? moves.length;
-  // We treat `viewingIndex` as an index into the `moves` array, with one extra virtual
-  // position `-1` meaning "start position" (fenHistory[0]).
-  const canGoBack = moves.length > 0 && currentIndex > -1;
-  const canGoForward = viewingIndex !== null && viewingIndex < moves.length;
+  }, [moves.length, view.varId, view.index]);
 
   const markTouchHandled = () => {
     touchHandledRef.current = true;
-    // Allow the next tick to clear so subsequent clicks work normally
     window.setTimeout(() => {
       touchHandledRef.current = false;
     }, 0);
   };
 
+  const goTo = (v: ViewState) => {
+    // Support legacy callers that only accept a mainline index/null.
+    (onNavigate as (arg: ViewState | number | null) => void)(
+      v.varId === null ? v.index : v
+    );
+  };
+
+  // Navigation: back/forward operate on the currently viewed line
+  const currentLineMoves = view.varId === null
+    ? moves
+    : (variations.find(v => v.id === view.varId)?.moves ?? []);
+  const currentIdx = view.index ?? currentLineMoves.length; // treat null (live) as end
+  const canGoBack = currentLineMoves.length > 0 && currentIdx > -1;
+  const canGoForward = view.index !== null && currentIdx < currentLineMoves.length;
+
   const handleBack = () => {
     if (!canGoBack) return;
-
-    // From the live position (viewingIndex === null), jumping to moves.length - 1
-    // would still show the live FEN (fenHistory[moves.length]).
-    // So we jump one earlier so the first tap actually goes "back" visually.
-    if (viewingIndex === null) {
-      onNavigate(moves.length >= 2 ? moves.length - 2 : -1);
+    if (view.varId === null && view.index === null) {
+      goTo({ varId: null, index: moves.length >= 2 ? moves.length - 2 : -1 });
       return;
     }
-
-    onNavigate(currentIndex - 1);
+    goTo({ ...view, index: currentIdx - 1 });
   };
 
   const handleForward = () => {
     if (!canGoForward) return;
-    const newIndex = currentIndex + 1;
-    onNavigate(newIndex >= moves.length ? null : newIndex);
+    const newIndex = currentIdx + 1;
+    if (view.varId === null && newIndex >= moves.length) {
+      goTo({ varId: null, index: null });
+    } else {
+      goTo({ ...view, index: newIndex });
+    }
   };
 
-  const handleButtonTouchEnd = (e: React.TouchEvent, action: () => void) => {
+  const handleTokenTouch = (e: React.TouchEvent, v: ViewState) => {
     markTouchHandled();
     e.preventDefault();
     e.stopPropagation();
-    action();
+    goTo(v);
   };
-
-  const handleButtonClick = (e: React.MouseEvent, action: () => void) => {
+  const handleTokenClick = (e: React.MouseEvent, v: ViewState) => {
     if (touchHandledRef.current) {
       e.preventDefault();
       e.stopPropagation();
       return;
     }
-    action();
+    goTo(v);
   };
 
-  const handleMoveTouchEnd = (e: React.TouchEvent, index: number) => {
-    markTouchHandled();
-    e.preventDefault();
-    e.stopPropagation();
-    onNavigate(index);
+  const isActive = (v: ViewState) =>
+    v.varId === view.varId && v.index === view.index;
+
+  const renderMainlineToken = (moveIdx: number) => {
+    const san = moves[moveIdx];
+    const isWhite = moveIdx % 2 === 0;
+    const target: ViewState = { varId: null, index: moveIdx };
+    return (
+      <span key={`m-${moveIdx}`} className="inline-flex items-baseline gap-1 mr-1">
+        {isWhite && (
+          <span className="text-muted-foreground">{Math.floor(moveIdx / 2) + 1}.</span>
+        )}
+        <span
+          className={`px-1 rounded cursor-pointer touch-manipulation md:hover:bg-accent active:bg-accent ${
+            isActive(target) ? 'bg-primary/20' : ''
+          }`}
+          onTouchEnd={(e) => handleTokenTouch(e, target)}
+          onClick={(e) => handleTokenClick(e, target)}
+        >
+          {san}
+        </span>
+      </span>
+    );
   };
 
-  const handleMoveClick = (e: React.MouseEvent, index: number) => {
-    if (touchHandledRef.current) {
-      e.preventDefault();
-      e.stopPropagation();
-      return;
-    }
-    onNavigate(index);
+  const renderVariation = (variation: Variation) => {
+    const startMoveNum = Math.floor(variation.branchIndex / 2) + 1;
+    const startIsWhite = variation.branchIndex % 2 === 0;
+    return (
+      <span
+        key={`v-${variation.id}`}
+        className="inline text-muted-foreground/80 italic mr-1"
+      >
+        (
+        {variation.moves.map((san, i) => {
+          const globalWhite = (variation.branchIndex + i) % 2 === 0;
+          const moveNum = Math.floor((variation.branchIndex + i) / 2) + 1;
+          const target: ViewState = { varId: variation.id, index: i };
+          const showNum = i === 0 || globalWhite;
+          const numLabel = globalWhite ? `${moveNum}.` : `${moveNum}...`;
+          return (
+            <span key={i} className="inline-flex items-baseline gap-1 mr-1">
+              {showNum && <span>{numLabel}</span>}
+              <span
+                className={`px-1 rounded cursor-pointer touch-manipulation md:hover:bg-accent active:bg-accent not-italic ${
+                  isActive(target) ? 'bg-primary/20 text-card-foreground' : ''
+                }`}
+                onTouchEnd={(e) => handleTokenTouch(e, target)}
+                onClick={(e) => handleTokenClick(e, target)}
+              >
+                {san}
+              </span>
+            </span>
+          );
+        })}
+        )
+      </span>
+    );
   };
-
-  // Calculate which move is highlighted based on viewingIndex
-  const getHighlightedMove = () => {
-    if (viewingIndex === null) return null;
-    return viewingIndex; // 0-indexed into moves array
-  };
-
-  const highlightedMove = getHighlightedMove();
 
   return (
     <div className="bg-card rounded-lg shadow-lg overflow-hidden">
@@ -114,8 +169,20 @@ export const MoveHistory = ({ moves, viewingIndex, onNavigate }: MoveHistoryProp
             variant="ghost"
             size="icon"
             className="h-7 w-7 touch-manipulation"
-            onTouchEnd={(e) => handleButtonTouchEnd(e, handleBack)}
-            onClick={(e) => handleButtonClick(e, handleBack)}
+            onTouchEnd={(e) => {
+              markTouchHandled();
+              e.preventDefault();
+              e.stopPropagation();
+              handleBack();
+            }}
+            onClick={(e) => {
+              if (touchHandledRef.current) {
+                e.preventDefault();
+                e.stopPropagation();
+                return;
+              }
+              handleBack();
+            }}
             disabled={!canGoBack}
           >
             <ChevronLeft className="h-4 w-4" />
@@ -124,8 +191,20 @@ export const MoveHistory = ({ moves, viewingIndex, onNavigate }: MoveHistoryProp
             variant="ghost"
             size="icon"
             className="h-7 w-7 touch-manipulation"
-            onTouchEnd={(e) => handleButtonTouchEnd(e, handleForward)}
-            onClick={(e) => handleButtonClick(e, handleForward)}
+            onTouchEnd={(e) => {
+              markTouchHandled();
+              e.preventDefault();
+              e.stopPropagation();
+              handleForward();
+            }}
+            onClick={(e) => {
+              if (touchHandledRef.current) {
+                e.preventDefault();
+                e.stopPropagation();
+                return;
+              }
+              handleForward();
+            }}
             disabled={!canGoForward}
           >
             <ChevronRight className="h-4 w-4" />
@@ -133,47 +212,27 @@ export const MoveHistory = ({ moves, viewingIndex, onNavigate }: MoveHistoryProp
         </div>
       </div>
       <ScrollArea className="h-48">
-        <div ref={scrollRef} className="p-3">
-          {movePairs.length === 0 ? (
+        <div ref={scrollRef} className="p-3 text-sm font-mono text-card-foreground leading-7">
+          {moves.length === 0 ? (
             <p className="text-muted-foreground text-sm">No moves yet</p>
           ) : (
-            <div className="space-y-1">
-              {movePairs.map((pair, pairIndex) => {
-                const whiteIndex = pairIndex * 2;
-                const blackIndex = pairIndex * 2 + 1;
+            <div>
+              {moves.map((_, i) => {
+                const varsHere = variations.filter(v => v.branchIndex === i);
+                // We render the variation AFTER the preceding mainline move.
+                // A variation that branches at index i replaces move i, so it
+                // should appear right after we render move i-1. We render before move i.
                 return (
-                  <div 
-                    key={pair.number} 
-                    className="flex gap-2 text-sm font-mono text-card-foreground"
-                  >
-                    <span className="w-6 text-muted-foreground">{pair.number}.</span>
-                    <span 
-                      className={`w-16 px-1 rounded cursor-pointer touch-manipulation md:hover:bg-accent active:bg-accent ${
-                        highlightedMove === whiteIndex ? 'bg-primary/20' : ''
-                      }`}
-                      onTouchEnd={(e) => handleMoveTouchEnd(e, whiteIndex)}
-                      onClick={(e) => handleMoveClick(e, whiteIndex)}
-                    >
-                      {pair.white}
-                    </span>
-                    <span 
-                      className={`w-16 px-1 rounded cursor-pointer touch-manipulation md:hover:bg-accent active:bg-accent ${
-                        highlightedMove === blackIndex ? 'bg-primary/20' : ''
-                      }`}
-                      onTouchEnd={(e) => {
-                        if (!pair.black) return;
-                        handleMoveTouchEnd(e, blackIndex);
-                      }}
-                      onClick={(e) => {
-                        if (!pair.black) return;
-                        handleMoveClick(e, blackIndex);
-                      }}
-                    >
-                      {pair.black || ''}
-                    </span>
-                  </div>
+                  <span key={i} className="inline">
+                    {varsHere.map(v => renderVariation(v))}
+                    {renderMainlineToken(i)}
+                  </span>
                 );
               })}
+              {/* trailing variations that branch at moves.length (shouldn't normally happen) */}
+              {variations
+                .filter(v => v.branchIndex >= moves.length)
+                .map(v => renderVariation(v))}
             </div>
           )}
         </div>
