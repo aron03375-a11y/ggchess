@@ -21,7 +21,7 @@ interface MoveHistoryProps {
   viewing?: ViewState;
   // Legacy prop kept for compatibility (mainline only): index into mainline moves
   viewingIndex?: number | null;
-  onNavigate: (view: ViewState) => void;
+  onNavigate: ((view: ViewState) => void) | ((index: number | null) => void);
 }
 
 export const MoveHistory = ({
