@@ -238,9 +238,12 @@ const Analysis = () => {
 
   const handleNavigate = useCallback(
     (arg: ViewState | number | null) => {
-      // Normalize (MoveHistory sends ViewState; legacy sends number|null)
       const v: ViewState =
-        typeof arg === 'number' || arg === null ? { varId: null, index: arg } : arg;
+        arg === null
+          ? { varId: null, index: null }
+          : typeof arg === 'number'
+          ? { varId: null, index: arg }
+          : arg;
 
       if (v.varId === null) {
         if (v.index === null) {
