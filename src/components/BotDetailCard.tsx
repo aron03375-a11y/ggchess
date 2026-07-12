@@ -1,14 +1,12 @@
-import { useState } from 'react';
 import { Bot } from '@/types/bot';
 import { Button } from '@/components/ui/button';
-import { Slider } from '@/components/ui/slider';
 import { ArrowLeft } from 'lucide-react';
 
 interface BotDetailCardProps {
   bot: Bot;
   playerColor: 'white' | 'black';
   onColorChange: (color: 'white' | 'black') => void;
-  onPlay: (bot: Bot) => void;
+  onPlay: () => void;
   onBack: () => void;
 }
 
@@ -19,16 +17,6 @@ export const BotDetailCard = ({
   onPlay,
   onBack,
 }: BotDetailCardProps) => {
-  const [elo, setElo] = useState<number>(bot.defaultElo ?? bot.uciElo ?? 1500);
-
-  const handlePlay = () => {
-    if (bot.isEloSlider) {
-      onPlay({ ...bot, uciElo: elo, elo });
-    } else {
-      onPlay(bot);
-    }
-  };
-
   return (
     <div className="bot-card-bg rounded-lg p-4 md:p-6 animate-in fade-in duration-300">
       <button
@@ -51,7 +39,7 @@ export const BotDetailCard = ({
             </p>
           </div>
           <p className="text-sm md:text-base font-nunito font-medium mt-2">
-            {bot.name} {bot.isEloSlider ? `(${elo})` : `(${bot.elo})`}
+            {bot.name} ({bot.elo})
           </p>
         </div>
       </div>
@@ -79,28 +67,8 @@ export const BotDetailCard = ({
         />
       </div>
 
-      {bot.isEloSlider && (
-        <div className="mb-6 space-y-3">
-          <div className="flex items-center justify-between font-nunito text-sm">
-            <span className="text-foreground/70">Strength (UCI Elo)</span>
-            <span className="font-semibold tabular-nums">{elo}</span>
-          </div>
-          <Slider
-            value={[elo]}
-            min={bot.minElo ?? 1}
-            max={bot.maxElo ?? 3500}
-            step={25}
-            onValueChange={(v) => setElo(v[0])}
-          />
-          <div className="flex justify-between text-xs text-foreground/60 font-nunito">
-            <span>{bot.minElo ?? 1}</span>
-            <span>{bot.maxElo ?? 3500}</span>
-          </div>
-        </div>
-      )}
-
       <Button
-        onClick={handlePlay}
+        onClick={onPlay}
         className="w-full py-6 text-xl font-fredoka font-bold bg-primary hover:bg-primary/90"
       >
         PLAY

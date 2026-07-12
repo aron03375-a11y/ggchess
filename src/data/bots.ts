@@ -2,18 +2,17 @@ import aronChill from '@/assets/aron-chill.png';
 import aronFocused from '@/assets/aron-focused.png';
 import aronCompetitive from '@/assets/aron-competitive.png';
 import aronMadness from '@/assets/aron-madness.png';
-import komodoAvatar from '@/assets/bot-komodo.png';
 import { Bot } from '@/types/bot';
 
-// Aron Moods — powered by Komodo TEP with UCI_Elo (auto skill).
+// Aron Moods — full-strength Stockfish nerfed via MultiPV + skillFormula picker.
+// divisionLevel drives depth, maxLoss (cp), and edge probability.
 export const aronBots: Bot[] = [
   {
     id: 'chill-aron',
     name: 'Chill Aron',
     elo: 800,
     skillLevel: 0,
-    uciElo: 800,
-    engine: 'komodo',
+    divisionLevel: 3, // Div 1, depth 6, maxLoss 230cp, edge 50%
     image: aronChill,
     greeting: "Ready for a fun game?",
     category: 'aron',
@@ -23,8 +22,7 @@ export const aronBots: Bot[] = [
     name: 'Focused Aron',
     elo: 1200,
     skillLevel: 0,
-    uciElo: 1200,
-    engine: 'komodo',
+    divisionLevel: 8, // Div 1, depth 6, maxLoss 180cp, edge 50%
     image: aronFocused,
     greeting: "Let's play a good game!",
     category: 'aron',
@@ -32,10 +30,9 @@ export const aronBots: Bot[] = [
   {
     id: 'competitive-aron',
     name: 'Competitive Aron',
-    elo: 1700,
+    elo: 1600,
     skillLevel: 0,
-    uciElo: 1700,
-    engine: 'komodo',
+    divisionLevel: 15, // Div 2, depth 9, maxLoss 110cp, edge 30%
     image: aronCompetitive,
     greeting: "I won't go easy on you!",
     category: 'aron',
@@ -43,33 +40,13 @@ export const aronBots: Bot[] = [
   {
     id: 'madness-aron',
     name: 'Madness Aron',
-    elo: 2400,
+    elo: 2000,
     skillLevel: 0,
-    uciElo: 2400,
-    engine: 'komodo',
+    divisionLevel: 22, // Div 3, depth 11, maxLoss 40cp, edge 50%
     image: aronMadness,
     greeting: "PREPARE FOR CHAOS!",
     category: 'aron',
   },
 ];
 
-// Komodo — single tile that opens a UCI_Elo slider (1–3500).
-export const komodoBots: Bot[] = [
-  {
-    id: 'komodo',
-    name: 'Komodo',
-    elo: 1500,
-    skillLevel: 0,
-    engine: 'komodo',
-    isEloSlider: true,
-    minElo: 1,
-    maxElo: 3500,
-    defaultElo: 1500,
-    uciElo: 1500,
-    image: komodoAvatar,
-    greeting: "Pick your challenge.",
-    category: 'komodo',
-  },
-];
-
-export const allBots = [...aronBots, ...komodoBots];
+export const allBots = [...aronBots];

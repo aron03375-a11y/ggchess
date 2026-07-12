@@ -10,7 +10,6 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, RotateCcw, Flag } from 'lucide-react';
 import { toast } from 'sonner';
 import { useStockfish } from '@/hooks/useStockfish';
-import { useKomodo } from '@/hooks/useKomodo';
 interface GameScreenProps {
   bot: Bot;
   playerColor: 'white' | 'black';
@@ -42,19 +41,16 @@ export const GameScreen = ({
   const [gameResult, setGameResult] = useState<'win' | 'loss' | 'draw' | null>(null);
   const [showResultDialog, setShowResultDialog] = useState(false);
   const isProcessingRef = useRef(false);
-  const isKomodo = bot.engine === 'komodo';
-  const komodo = useKomodo({
-    uciElo: isKomodo ? bot.uciElo : undefined,
-    depth: isKomodo ? bot.depth : undefined,
-  });
-  const stockfish = useStockfish({
+  const {
+    getBestMove,
+    isReady
+  } = useStockfish({
     skillLevel: bot.skillLevel,
     depth: bot.depth,
     formula: bot.formula,
-    uciElo: isKomodo ? undefined : bot.uciElo,
+    uciElo: bot.uciElo,
     divisionLevel: bot.divisionLevel,
   });
-  const { getBestMove, isReady } = isKomodo ? komodo : stockfish;
 
   // Display FEN based on viewing index
   const displayFen = viewingIndex !== null ? fenHistory[viewingIndex + 1] : fen;
