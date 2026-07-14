@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Bot } from '@/types/bot';
-import { aronBots } from '@/data/bots';
+import { aronBots, magnusBots } from '@/data/bots';
 import { BotAvatar } from './BotAvatar';
 import { BotDetailCard } from './BotDetailCard';
 
@@ -42,6 +42,19 @@ export const BotSelector = ({ onStartGame }: BotSelectorProps) => {
             <h3 className="text-center font-nunito font-medium text-sm mb-3">Aron moods</h3>
             <div className="flex justify-center gap-3 flex-wrap">
               {aronBots.map((bot) => (
+                <BotAvatar
+                  key={bot.id}
+                  bot={bot}
+                  isSelected={selectedBot?.id === bot.id}
+                  onClick={() => handleBotClick(bot)}
+                />
+              ))}
+            </div>
+          </div>
+          <div className="bot-card-bg rounded-lg p-4">
+            <h3 className="text-center font-nunito font-medium text-sm mb-3">Magnus moods</h3>
+            <div className="flex justify-center gap-3 flex-wrap">
+              {magnusBots.map((bot) => (
                 <BotAvatar
                   key={bot.id}
                   bot={bot}
