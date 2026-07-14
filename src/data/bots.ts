@@ -2,6 +2,7 @@ import aronChill from '@/assets/aron-chill.png';
 import aronFocused from '@/assets/aron-focused.png';
 import aronCompetitive from '@/assets/aron-competitive.png';
 import aronMadness from '@/assets/aron-madness.png';
+import magniAvatar from '@/assets/magni.png';
 import { Bot } from '@/types/bot';
 
 // Aron Moods — full-strength Stockfish nerfed via MultiPV + skillFormula picker.
@@ -45,6 +46,16 @@ export const aronBots: Bot[] = [
     divisionLevel: 16, // Div 3, depth 11, maxLoss 40cp, edge 50%
     image: aronMadness,
     greeting: "PREPARE FOR CHAOS!",
+    category: 'aron',
+  },
+  {
+    id: 'the-magni',
+    name: 'The Magni',
+    elo: 99999,
+    skillLevel: 0,
+    divisionLevel: 24,
+    image: magniAvatar,
+    greeting: "I am The Magni.",
     category: 'aron',
   },
 ];
