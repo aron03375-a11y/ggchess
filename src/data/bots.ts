@@ -22,7 +22,7 @@ export const aronBots: Bot[] = [
     name: 'Focused Aron',
     elo: 1200,
     skillLevel: 0,
-    divisionLevel: 8, // Div 1, depth 6, maxLoss 180cp, edge 50%
+    divisionLevel: 7, // Div 1, depth 6, maxLoss 180cp, edge 50%
     image: aronFocused,
     greeting: "Let's play a good game!",
     category: 'aron',
@@ -32,7 +32,7 @@ export const aronBots: Bot[] = [
     name: 'Competitive Aron',
     elo: 1600,
     skillLevel: 0,
-    divisionLevel: 15, // Div 2, depth 9, maxLoss 110cp, edge 30%
+    divisionLevel: 11, // Div 2, depth 9, maxLoss 110cp, edge 30%
     image: aronCompetitive,
     greeting: "I won't go easy on you!",
     category: 'aron',
@@ -42,7 +42,7 @@ export const aronBots: Bot[] = [
     name: 'Madness Aron',
     elo: 2000,
     skillLevel: 0,
-    divisionLevel: 22, // Div 3, depth 11, maxLoss 40cp, edge 50%
+    divisionLevel: 16, // Div 3, depth 11, maxLoss 40cp, edge 50%
     image: aronMadness,
     greeting: "PREPARE FOR CHAOS!",
     category: 'aron',
