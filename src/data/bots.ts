@@ -52,16 +52,6 @@ export const aronBots: Bot[] = [
     greeting: "PREPARE FOR CHAOS!",
     category: 'aron',
   },
-  {
-    id: 'the-magni',
-    name: 'The Magni',
-    elo: 99999,
-    skillLevel: 0,
-    divisionLevel: 25,
-    image: magniAvatar,
-    greeting: "I am The Magni.",
-    category: 'magnus',
-  },
 ];
 
 // Magnus Moods — full-strength Stockfish nerfed via MultiPV + skillFormula picker.
