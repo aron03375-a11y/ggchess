@@ -10,8 +10,8 @@ export type RootScore = { move: string; score: number };
 
 /**
  * Division tuning:
- *   Div 1 (lvl 1-9)   -> depth 6,  edge 50%
- *   Div 2 (lvl 10-20) -> depth 9,  edge 30%
+ *   Div 1 (lvl 1-9)   -> depth 6,  edge 60%
+ *   Div 2 (lvl 10-20) -> depth 9,  edge 40%
  *   Div 3 (lvl 21-25) -> depth 11, edge 50%
  *
  * maxLoss (centipawns) shrinks as level rises: 10 * (26 - level)
@@ -22,8 +22,8 @@ export function skillSettings(level: number): {
   depth: number; maxLoss: number; edgeChance: number; label: string;
 } {
   const lvl = Math.max(1, Math.min(25, Math.floor(level)));
-  if (lvl <= 9)  return { depth: 6,  maxLoss: 10 * (26 - lvl), edgeChance: 0.5, label: 'Div 1' };
-  if (lvl <= 20) return { depth: 9,  maxLoss: 10 * (26 - lvl), edgeChance: 0.35, label: 'Div 2' };
+  if (lvl <= 9)  return { depth: 6,  maxLoss: 10 * (26 - lvl), edgeChance: 0.6, label: 'Div 1' };
+  if (lvl <= 20) return { depth: 9,  maxLoss: 10 * (26 - lvl), edgeChance: 0.4, label: 'Div 2' };
   return         { depth: 11, maxLoss: 10 * (26 - lvl), edgeChance: 0.5, label: 'Div 3' };
 }
 
