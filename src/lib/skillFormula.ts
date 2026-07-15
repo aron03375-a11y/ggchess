@@ -30,8 +30,8 @@ export function skillSettings(level: number): {
 /**
  * Pick a move from the MultiPV list according to the level's division rules:
  *  - Keep only moves within `maxLoss` cp of the best score.
- *  - With probability `edgeChance` play a RANDOM move inside that window
- *    (excluding the best); otherwise play the best.
+ *  - With probability `edgeChance` play the WORST move inside that window
+ *    (lowest score within allowed loss); otherwise play the best.
  */
 export function chooseSkillMove(scores: RootScore[], level: number): RootScore | null {
   if (scores.length === 0) return null;
@@ -41,9 +41,9 @@ export function chooseSkillMove(scores: RootScore[], level: number): RootScore |
   const inside = sorted.filter(c => best.score - c.score <= maxLoss);
   if (inside.length <= 1) return best;
   
-  // Exclude the best move from candidates for random selection
-  const suboptimal = inside.slice(1);
-  return Math.random() < edgeChance ? suboptimal[Math.floor(Math.random() * suboptimal.length)] : best;
+  // Get the worst move (lowest score) within maxLoss window
+  const worst = inside[inside.length - 1];
+  return Math.random() < edgeChance ? worst : best;
 }
 
 /**
