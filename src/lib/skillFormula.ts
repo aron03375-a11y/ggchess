@@ -11,8 +11,8 @@ export type RootScore = { move: string; score: number };
 /**
  * Division tuning:
  *   Div 1 (lvl 1-9)   -> depth 6,  edge 60%
- *   Div 2 (lvl 10-20) -> depth 9,  edge 40%
- *   Div 3 (lvl 21-25) -> depth 11, edge 50%
+ *   Div 2 (lvl 10-20) -> depth 9,  edge 60%
+ *   Div 3 (lvl 21-25) -> depth 11, edge 60%
  *
  * maxLoss (centipawns) shrinks as level rises: 10 * (26 - level)
  *   lvl 1  -> 250cp tolerated
@@ -23,15 +23,15 @@ export function skillSettings(level: number): {
 } {
   const lvl = Math.max(1, Math.min(25, Math.floor(level)));
   if (lvl <= 9)  return { depth: 6,  maxLoss: 10 * (26 - lvl), edgeChance: 0.6, label: 'Div 1' };
-  if (lvl <= 20) return { depth: 9,  maxLoss: 10 * (26 - lvl), edgeChance: 0.4, label: 'Div 2' };
-  return         { depth: 11, maxLoss: 10 * (26 - lvl), edgeChance: 0.5, label: 'Div 3' };
+  if (lvl <= 20) return { depth: 9,  maxLoss: 10 * (26 - lvl), edgeChance: 0.6, label: 'Div 2' };
+  return         { depth: 11, maxLoss: 10 * (26 - lvl), edgeChance: 0.6, label: 'Div 3' };
 }
 
 /**
  * Pick a move from the MultiPV list according to the level's division rules:
  *  - Keep only moves within `maxLoss` cp of the best score.
- *  - With probability `edgeChance` play the WORST move inside that window
- *    (lowest score within allowed loss); otherwise play the best.
+ *  - With probability `edgeChance` play a RANDOM move inside that window
+ *    (excluding the best); otherwise play the best.
  */
 export function chooseSkillMove(scores: RootScore[], level: number): RootScore | null {
   if (scores.length === 0) return null;
@@ -41,9 +41,9 @@ export function chooseSkillMove(scores: RootScore[], level: number): RootScore |
   const inside = sorted.filter(c => best.score - c.score <= maxLoss);
   if (inside.length <= 1) return best;
   
-  // Get the worst move (lowest score) within maxLoss window
-  const worst = inside[inside.length - 1];
-  return Math.random() < edgeChance ? worst : best;
+  // Exclude the best move from candidates for random selection
+  const suboptimal = inside.slice(1);
+  return Math.random() < edgeChance ? suboptimal[Math.floor(Math.random() * suboptimal.length)] : best;
 }
 
 /**
