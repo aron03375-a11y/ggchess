@@ -22,9 +22,9 @@ export function skillSettings(level: number): {
   depth: number; maxLoss: number; edgeChance: number; label: string;
 } {
   const lvl = Math.max(1, Math.min(25, Math.floor(level)));
-  if (lvl <= 10)  return { depth: 6,  maxLoss:300, edgeChance: (50 - lvl * 2) / 100 , label: 'Div 1' };
-  if (lvl <= 20) return { depth: 9,  maxLoss: 200, edgeChance: (50 - lvl * 2) / 100 , label: 'Div 2' };
-  return         { depth: 12, maxLoss: 150, edgeChance: (50 - lvl * 2) / 100 , label: 'Div 3' };
+  if (lvl <= 10)  return { depth: 6,  maxLoss:300, edgeChance: (26 - lvl ) / 100 , label: 'Div 1' };
+  if (lvl <= 20) return { depth: 9,  maxLoss: 200, edgeChance: (26 - lvl ) / 100 , label: 'Div 2' };
+  return         { depth: 12, maxLoss: 150, edgeChance: (26 - lvl ) / 100 , label: 'Div 3' };
 }
 
 /**
