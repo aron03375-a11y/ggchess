@@ -102,7 +102,7 @@ export const magnusBots: Bot[] = [
     name: 'The Magni',
     elo: 99999,
     skillLevel: 0,
-    divisionLevel: 25,
+    divisionLevel: 22,
     image: magniAvatar,
     greeting: "I am The Magni.",
     category: 'magnus',
