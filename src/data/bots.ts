@@ -2,7 +2,7 @@ import aronChill from '@/assets/aron-chill.png';
 import aronFocused from '@/assets/aron-focused.png';
 import aronCompetitive from '@/assets/aron-competitive.png';
 import aronMadness from '@/assets/aron-madness.png';
-import magniAvatar from '@/assets/magni.png';
+import magniAvatar from '@/assets/magni.jpg';
 import sleepyMagnus from '@/assets/sleepy-magnus.png';
 import skaterMagnus from '@/assets/skater-magnus.png';
 import soccerMagnus from '@/assets/soccer-magnus.png';
