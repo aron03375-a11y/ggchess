@@ -259,14 +259,10 @@ export const GameScreen = ({
   }, [moves.length]);
   return <div className="flex flex-col lg:flex-row gap-6 items-start justify-center w-full max-w-6xl mx-auto">
       {/* Left side - Controls & Bot info */}
-      <div className="flex flex-col gap-4 w-1/4 lg:w-64">
+      <div className="flex flex-col gap-4 w-full lg:w-64">
         <Button variant="outline" onClick={onBack} className="flex items-center gap-2">
           <ArrowLeft size={18} />
           Back to Bots
-        </Button>
-        <Button variant="destructive" onClick={handleResign} disabled={moves.length === 0 || game.isGameOver()} className="flex items-center gap-2">
-          <Flag size={18} />
-          Resign
         </Button>
 
         <div className="bg-card rounded-lg p-4 shadow-lg">
@@ -282,7 +278,11 @@ export const GameScreen = ({
 
         
 
-        
+        <Button variant="destructive" onClick={handleResign} disabled={moves.length === 0 || game.isGameOver()} className="flex items-center gap-2">
+          <Flag size={18} />
+          Resign
+        </Button>
+      </div>
 
       {/* Center - Chess Board with Captured Pieces */}
       <div className="flex flex-col items-center gap-4">
