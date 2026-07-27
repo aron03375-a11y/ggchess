@@ -259,7 +259,7 @@ export const GameScreen = ({
   }, [moves.length]);
   return <div className="flex flex-col lg:flex-row gap-6 items-start justify-center w-full max-w-6xl mx-auto">
       {/* Left side - Controls & Bot info */}
-      <div className="flex flex-col gap-4 w-1/3 lg:w-64">
+      <div className="flex flex-col gap-4 w-1/4 lg:w-64">
         <Button variant="outline" onClick={onBack} className="flex items-center gap-2">
           <ArrowLeft size={18} />
           Back to Bots
