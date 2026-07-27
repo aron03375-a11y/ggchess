@@ -266,7 +266,7 @@ export const GameScreen = ({
         </Button>
 
         <div className="bg-card rounded-lg p-4 shadow-lg">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1">
             <img src={bot.image} alt={bot.name} className="w-12 h-12 rounded-lg object-cover" />
             <div>
               <p className="font-fredoka font-semibold text-card-foreground">{bot.name}</p>
