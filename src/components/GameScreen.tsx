@@ -266,13 +266,14 @@ export const GameScreen = ({
         </Button>
 
         <div className="bg-card rounded-lg p-4 shadow-lg">
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-3">
             <img src={bot.image} alt={bot.name} className="w-12 h-12 rounded-lg object-cover" />
-            <div>
+            <div className="flex items-center gap-1">
               <p className="font-fredoka font-semibold text-card-foreground">{bot.name}</p>
               <p className="text-sm text-muted-foreground"> ({bot.elo})</p>
             </div>
           </div>
+          {capturedPieces.top}
         </div>
 
         
@@ -293,7 +294,7 @@ export const GameScreen = ({
         </div>
         
         {/* Captured pieces - top (opponent's captures) */}
-        {capturedPieces.top}
+        
         
         <ChessBoard key={gameKey} fen={displayFen} playerColor={playerColor} onMove={handleMove} disabled={isThinking || viewingIndex !== null} lastMove={displayLastMove} onPromotionNeeded={handlePromotionNeeded} />
         
