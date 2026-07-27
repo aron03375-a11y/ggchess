@@ -270,15 +270,12 @@ export const GameScreen = ({
             <img src={bot.image} alt={bot.name} className="w-12 h-12 rounded-lg object-cover" />
             <div>
               <p className="font-fredoka font-semibold text-card-foreground">{bot.name}</p>
-              <p className="text-sm text-muted-foreground">ELO: {bot.elo}</p>
+              <p className="text-sm text-muted-foreground"> ({bot.elo})</p>
             </div>
           </div>
         </div>
 
-        <Button variant="secondary" onClick={handleReset} className="flex items-center gap-2">
-          <RotateCcw size={18} />
-          New Game
-        </Button>
+        
 
         <Button variant="destructive" onClick={handleResign} disabled={moves.length === 0 || game.isGameOver()} className="flex items-center gap-2">
           <Flag size={18} />
