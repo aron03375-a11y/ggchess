@@ -3,10 +3,10 @@ import aronFocused from '@/assets/aron-focused.png';
 import aronCompetitive from '@/assets/aron-competitive.png';
 import aronMadness from '@/assets/aron-madness.png';
 import magniAvatar from '@/assets/magni.jpg';
-import sleepyMagnus from '@/assets/sleepy-magnus.png';
-import skaterMagnus from '@/assets/skater-magnus.png';
-import soccerMagnus from '@/assets/soccer-magnus.png';
-import chefMagnus from '@/assets/chef-magnus.png';
+import sleepyMagnus from '@/assets/sleepy-magnus.jpg';
+import skaterMagnus from '@/assets/skater-magnus.jpg';
+import soccerMagnus from '@/assets/soccer-magnus.jpg';
+import chefMagnus from '@/assets/chef-magnus.jpg';
 import { Bot } from '@/types/bot';
 
 // Aron Moods — full-strength Stockfish nerfed via MultiPV + skillFormula picker.
@@ -99,7 +99,7 @@ export const magnusBots: Bot[] = [
   },
   {
     id: 'the-magni',
-    name: 'The Magni',
+    name: 'Magnus Carlsen',
     elo: 2884,
     skillLevel: 0,
     divisionLevel: 23,
