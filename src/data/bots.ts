@@ -1,68 +1,58 @@
-import aronChill from '@/assets/aron-chill.png';
-import aronFocused from '@/assets/aron-focused.png';
-import aronCompetitive from '@/assets/aron-competitive.png';
-import aronMadness from '@/assets/aron-madness.png';
 import magniAvatar from '@/assets/magni.jpg';
 import sleepyMagnus from '@/assets/sleepy-magnus.jpg';
 import skaterMagnus from '@/assets/skater-magnus.jpg';
 import soccerMagnus from '@/assets/soccer-magnus.jpg';
 import chefMagnus from '@/assets/chef-magnus.jpg';
+import emma1 from '@/assets/Emma1.jpg.asset.json';
+import daniel3 from '@/assets/Daniel3.jpg.asset.json';
+import sofia5 from '@/assets/Sofia5.jpg.asset.json';
+import marcus8 from '@/assets/Marcus8.jpg.asset.json';
+import jamal11 from '@/assets/Jamal11.jpg.asset.json';
+import asha13 from '@/assets/Asha13.jpg.asset.json';
+import aizen15 from '@/assets/Aizen15.jpg.asset.json';
+import mei18 from '@/assets/Mei18.jpg.asset.json';
 import { Bot } from '@/types/bot';
 
-// Aron Moods — full-strength Stockfish nerfed via MultiPV + skillFormula picker.
-// divisionLevel drives depth, maxLoss (cp), and edge probability.
-export const aronBots: Bot[] = [
-  {
-    id: 'chill-aron',
-    name: 'Chill Aron',
-    elo: 800,
-    skillLevel: 0,
-    divisionLevel: 3, // Div 1, depth 6, maxLoss 230cp, edge 50%
-    image: aronChill,
-    greeting: "Ready for a fun game?",
-    category: 'aron',
-  },
-  {
-    id: 'focused-aron',
-    name: 'Focused Aron',
-    elo: 1200,
-    skillLevel: 0,
-    divisionLevel: 7, // Div 1, depth 6, maxLoss 180cp, edge 50%
-    image: aronFocused,
-    greeting: "Let's play a good game!",
-    category: 'aron',
-  },
-  {
-    id: 'competitive-aron',
-    name: 'Competitive Aron',
-    elo: 1600,
-    skillLevel: 0,
-    divisionLevel: 11, // Div 2, depth 9, maxLoss 110cp, edge 30%
-    image: aronCompetitive,
-    greeting: "I won't go easy on you!",
-    category: 'aron',
-  },
-  {
-    id: 'madness-aron',
-    name: 'Madness Aron',
-    elo: 2000,
-    skillLevel: 0,
-    divisionLevel: 16, // Div 3, depth 11, maxLoss 40cp, edge 50%
-    image: aronMadness,
-    greeting: "PREPARE FOR CHAOS!",
-    category: 'aron',
-  },
+// Chess Club — the number in each name is the skill (division) level.
+// Elo mapping: level 1 = 500, +100 per level.
+const clubElo = (level: number) => 500 + (level - 1) * 100;
+
+const club = (
+  id: string,
+  name: string,
+  level: number,
+  image: string,
+  greeting: string,
+): Bot => ({
+  id,
+  name: `${name}${level}`,
+  elo: clubElo(level),
+  skillLevel: 0,
+  divisionLevel: level,
+  image,
+  greeting,
+  category: 'chessclub',
+});
+
+export const chessClubBots: Bot[] = [
+  club('emma-1', 'Emma', 1, emma1.url, "I'm just learning, be nice!"),
+  club('daniel-3', 'Daniel', 3, daniel3.url, "Let's have a friendly game."),
+  club('sofia-5', 'Sofia', 5, sofia5.url, "I've been practising my openings."),
+  club('marcus-8', 'Marcus', 8, marcus8.url, "Tactics are my thing."),
+  club('jamal-11', 'Jamal', 11, jamal11.url, "Club champion material, watch out."),
+  club('asha-13', 'Asha', 13, asha13.url, "I never miss a fork."),
+  club('aizen-15', 'Aizen', 15, aizen15.url, "Endgames? My favourite part."),
+  club('mei-18', 'Mei', 18, mei18.url, "Prepare to be outplayed."),
 ];
 
 // Magnus Moods — full-strength Stockfish nerfed via MultiPV + skillFormula picker.
-// divisionLevel drives depth, maxLoss (cp), and edge probability.
 export const magnusBots: Bot[] = [
   {
     id: 'sleepy-magnus',
     name: 'Sleepy Magnus',
     elo: 500,
     skillLevel: 0,
-    divisionLevel: 1, // Div 1, depth 6, maxLoss 250cp, edge 50%
+    divisionLevel: 1,
     image: sleepyMagnus,
     greeting: "Yawn... let's play...",
     category: 'magnus',
@@ -72,7 +62,7 @@ export const magnusBots: Bot[] = [
     name: 'Soccer Magnus',
     elo: 1000,
     skillLevel: 0,
-    divisionLevel: 5, // Div 1, depth 6, maxLoss 210cp, edge 50%
+    divisionLevel: 5,
     image: soccerMagnus,
     greeting: "Let's kick off a game!",
     category: 'magnus',
@@ -82,7 +72,7 @@ export const magnusBots: Bot[] = [
     name: 'Skater Magnus',
     elo: 1500,
     skillLevel: 0,
-    divisionLevel: 10, // Div 2, depth 9, maxLoss 160cp, edge 30%
+    divisionLevel: 10,
     image: skaterMagnus,
     greeting: "Time to shred on the board!",
     category: 'magnus',
@@ -92,7 +82,7 @@ export const magnusBots: Bot[] = [
     name: 'Chef Magnus',
     elo: 1700,
     skillLevel: 0,
-    divisionLevel: 12, // Div 2, depth 9, maxLoss 140cp, edge 30%
+    divisionLevel: 12,
     image: chefMagnus,
     greeting: "Let me cook up some tactics!",
     category: 'magnus',
@@ -109,4 +99,4 @@ export const magnusBots: Bot[] = [
   },
 ];
 
-export const allBots = [...aronBots, ...magnusBots];
+export const allBots = [...chessClubBots, ...magnusBots];

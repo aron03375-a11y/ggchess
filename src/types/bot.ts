@@ -12,7 +12,7 @@ export interface Bot {
   depth?: number;
   image: string;
   greeting: string;
-  category: 'aron';
+  category: 'chessclub' | 'magnus';
   formula?: MittensFormula;
   openingMoves?: Record<string, string>;
   uciElo?: number;
