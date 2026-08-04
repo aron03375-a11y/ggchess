@@ -13,20 +13,17 @@ import aizen15 from '@/assets/Aizen15.jpg.asset.json';
 import mei18 from '@/assets/Mei18.jpg.asset.json';
 import { Bot } from '@/types/bot';
 
-// Chess Club — the number in each name is the skill (division) level.
-// Elo mapping: level 1 = 500, +100 per level.
-const clubElo = (level: number) => 500 + (level - 1) * 100;
-
 const club = (
   id: string,
   name: string,
   level: number,
+  elo: number,
   image: string,
   greeting: string,
 ): Bot => ({
   id,
   name,
-  elo: clubElo(level),
+  elo,
   skillLevel: 0,
   divisionLevel: level,
   image,
