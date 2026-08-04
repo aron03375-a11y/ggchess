@@ -25,7 +25,7 @@ const club = (
   greeting: string,
 ): Bot => ({
   id,
-  name: `${name}${level}`,
+  name,
   elo: clubElo(level),
   skillLevel: 0,
   divisionLevel: level,
