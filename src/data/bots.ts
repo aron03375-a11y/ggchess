@@ -28,7 +28,7 @@ export const chessClubBots: Bot[] = [
   {
     id: 'daniel-3',
     name: 'Daniel',
-    elo: 700,
+    elo: 600,
     skillLevel: 0,
     divisionLevel: 3,
     image: daniel3.url,
@@ -38,7 +38,7 @@ export const chessClubBots: Bot[] = [
   {
     id: 'sofia-5',
     name: 'Sofia',
-    elo: 900,
+    elo: 700,
     skillLevel: 0,
     divisionLevel: 5,
     image: sofia5.url,
@@ -48,7 +48,7 @@ export const chessClubBots: Bot[] = [
   {
     id: 'marcus-8',
     name: 'Marcus',
-    elo: 1200,
+    elo: 800,
     skillLevel: 0,
     divisionLevel: 8,
     image: marcus8.url,
@@ -58,7 +58,7 @@ export const chessClubBots: Bot[] = [
   {
     id: 'jamal-11',
     name: 'Jamal',
-    elo: 1500,
+    elo: 900,
     skillLevel: 0,
     divisionLevel: 11,
     image: jamal11.url,
@@ -68,7 +68,7 @@ export const chessClubBots: Bot[] = [
   {
     id: 'asha-13',
     name: 'Asha',
-    elo: 1700,
+    elo: 1000,
     skillLevel: 0,
     divisionLevel: 13,
     image: asha13.url,
@@ -78,7 +78,7 @@ export const chessClubBots: Bot[] = [
   {
     id: 'aizen-15',
     name: 'Aizen',
-    elo: 1900,
+    elo: 1100,
     skillLevel: 0,
     divisionLevel: 15,
     image: aizen15.url,
@@ -88,7 +88,7 @@ export const chessClubBots: Bot[] = [
   {
     id: 'mei-18',
     name: 'Mei',
-    elo: 2200,
+    elo: 1200,
     skillLevel: 0,
     divisionLevel: 18,
     image: mei18.url,
