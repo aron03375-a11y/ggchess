@@ -34,12 +34,12 @@ const club = (
 export const chessClubBots: Bot[] = [
   club('emma-1', 'Emma', 1, 500, emma1.url, "I'm just learning, be nice!"),
   club('daniel-3', 'Daniel', 3, 700, daniel3.url, "Let's have a friendly game."),
-  club('sofia-5', 'Sofia', 5, 900, sofia5.url, "I've been practising my openings."),
-  club('marcus-8', 'Marcus', 8, 1200, marcus8.url, "Tactics are my thing."),
-  club('jamal-11', 'Jamal', 11, 1500, jamal11.url, "Club champion material, watch out."),
-  club('asha-13', 'Asha', 13, 1700, asha13.url, "I never miss a fork."),
-  club('aizen-15', 'Aizen', 15, 1900, aizen15.url, "Endgames? My favourite part."),
-  club('mei-18', 'Mei', 18, 2200, mei18.url, "Prepare to be outplayed."),
+  club('sofia-5', 'Sofia', 5, 1000, sofia5.url, "I've been practising my openings."),
+  club('marcus-8', 'Marcus', 8, 1000, marcus8.url, "Tactics are my thing."),
+  club('jamal-11', 'Jamal', 11, 1600, jamal11.url, "Club champion material, watch out."),
+  club('asha-13', 'Asha', 13, 11800, asha13.url, "I never miss a fork."),
+  club('aizen-15', 'Aizen', 15, 2000, aizen15.url, "Endgames? My favourite part."),
+  club('mei-18', 'Mei', 18, 2250, mei18.url, "Prepare to be outplayed."),
 ];
 
 // Magnus Moods — full-strength Stockfish nerfed via MultiPV + skillFormula picker.
