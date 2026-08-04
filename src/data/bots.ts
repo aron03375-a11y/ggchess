@@ -13,20 +13,17 @@ import aizen15 from '@/assets/Aizen15.jpg.asset.json';
 import mei18 from '@/assets/Mei18.jpg.asset.json';
 import { Bot } from '@/types/bot';
 
-// Chess Club — the number in each name is the skill (division) level.
-// Elo mapping: level 1 = 500, +100 per level.
-const clubElo = (level: number) => 500 + (level - 1) * 100;
-
 const club = (
   id: string,
   name: string,
   level: number,
+  elo: number,
   image: string,
   greeting: string,
 ): Bot => ({
   id,
   name,
-  elo: clubElo(level),
+  elo,
   skillLevel: 0,
   divisionLevel: level,
   image,
@@ -35,14 +32,14 @@ const club = (
 });
 
 export const chessClubBots: Bot[] = [
-  club('emma-1', 'Emma', 1, emma1.url, "I'm just learning, be nice!"),
-  club('daniel-3', 'Daniel', 3, daniel3.url, "Let's have a friendly game."),
-  club('sofia-5', 'Sofia', 5, sofia5.url, "I've been practising my openings."),
-  club('marcus-8', 'Marcus', 8, marcus8.url, "Tactics are my thing."),
-  club('jamal-11', 'Jamal', 11, jamal11.url, "Club champion material, watch out."),
-  club('asha-13', 'Asha', 13, asha13.url, "I never miss a fork."),
-  club('aizen-15', 'Aizen', 15, aizen15.url, "Endgames? My favourite part."),
-  club('mei-18', 'Mei', 18, mei18.url, "Prepare to be outplayed."),
+  club('emma-1', 'Emma', 1, 500, emma1.url, "I'm just learning, be nice!"),
+  club('daniel-3', 'Daniel', 3, 700, daniel3.url, "Let's have a friendly game."),
+  club('sofia-5', 'Sofia', 5, 900, sofia5.url, "I've been practising my openings."),
+  club('marcus-8', 'Marcus', 8, 1200, marcus8.url, "Tactics are my thing."),
+  club('jamal-11', 'Jamal', 11, 1500, jamal11.url, "Club champion material, watch out."),
+  club('asha-13', 'Asha', 13, 1700, asha13.url, "I never miss a fork."),
+  club('aizen-15', 'Aizen', 15, 1900, aizen15.url, "Endgames? My favourite part."),
+  club('mei-18', 'Mei', 18, 2200, mei18.url, "Prepare to be outplayed."),
 ];
 
 // Magnus Moods — full-strength Stockfish nerfed via MultiPV + skillFormula picker.
