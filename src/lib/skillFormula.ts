@@ -22,9 +22,9 @@ export function skillSettings(level: number): {
   depth: number; maxLoss: number; edgeChance: number; label: string;
 } {
   const lvl = Math.max(1, Math.min(25, Math.floor(level)));
-  if (lvl <= 10)  return { depth: 6,  maxLoss:350, edgeChance: (50 - lvl*2 ) / 100 , label: 'Div 1' };
-  if (lvl <= 20) return { depth: 9,  maxLoss: 250, edgeChance: (50 - lvl*2 ) / 100 , label: 'Div 2' };
-  return         { depth: 12, maxLoss: 150, edgeChance: (50 - lvl*2 ) / 100 , label: 'Div 3' };
+  if (lvl <= 10)  return { depth: 6,  maxLoss:400, edgeChance: (50 - lvl*2 ) / 100 , label: 'Div 1' };
+  if (lvl <= 20) return { depth: 9,  maxLoss: 300, edgeChance: (50 - lvl*2 ) / 100 , label: 'Div 2' };
+  return         { depth: 12, maxLoss: 200, edgeChance: (50 - lvl*2 ) / 100 , label: 'Div 3' };
 }
 
 /**
@@ -57,6 +57,6 @@ export function parseUciScore(parts: string[]): number | null {
   const raw = Number(parts[i + 2]);
   if (!Number.isFinite(raw)) return null;
   if (kind === 'cp') return raw;
-  if (kind === 'mate') return raw > 0 ? 90000 - raw : -90000 - raw;
+  if (kind === 'mate') return raw > 0 ? 401 - raw : -401 - raw;
   return null;
 }
