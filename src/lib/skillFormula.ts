@@ -1,54 +1,63 @@
-// Pure skill-level logic: divisions, depth, maxLoss, edge probability, and picker.
+// Pure Elo-based bot strength logic: depth, maxLoss, best-move probability, and picker.
 // Zero dependencies.
 //
 // Usage:
-//   1) Ask Stockfish for MultiPV lines at `depth` from skillSettings(level).
+//   1) Ask Stockfish for MultiPV lines at `depth` from eloSettings(botElo).
 //   2) Collect { move, score } pairs (score in centipawns from side-to-move POV).
-//   3) Call chooseSkillMove(scores, level) to pick the final move.
+//   3) Call chooseEloMove(scores, botElo) to pick the final move.
 
 export type RootScore = { move: string; score: number };
 
 /**
- * Division tuning:
- *   Div 1 (lvl 1-9)   -> depth 6,  edge 60%
- *   Div 2 (lvl 10-20) -> depth 9,  edge 45%
- *   Div 3 (lvl 21-25) -> depth 11, edge 60%
- *
- * maxLoss (centipawns) shrinks as level rises: 10 * (26 - level)
- *   lvl 1  -> 250cp tolerated
- *   lvl 25 -> 10cp tolerated
+ * Probability of playing the engine's best move = botElo / 3200,
+ * rounded to the nearest 1/100 (e.g. 0.459 -> 0.46). Clamped to [0, 1].
  */
-export function skillSettings(level: number): {
-  depth: number; maxLoss: number; edgeChance: number; label: string;
-} {
-  const lvl = Math.max(1, Math.min(30, Math.floor(level)));
-  if (lvl <= 15)  return { depth: 6,  maxLoss:350, edgeChance: (60 - lvl*2 ) / 100 , label: 'Div 1' };
-  if (lvl <= 25) return { depth: 9,  maxLoss: 250, edgeChance: (60 - lvl*2 ) / 100 , label: 'Div 2' };
-  return         { depth: 12, maxLoss: 150, edgeChance: (60 - lvl*2 ) / 100 , label: 'Div 3' };
+export function bestMoveProbability(botElo: number): number {
+  const p = Math.round((botElo / 3200) * 100) / 100;
+  return Math.max(0, Math.min(1, p));
 }
 
 /**
- * Pick a move from the MultiPV list according to the level's division rules:
- *  - Keep only moves within `maxLoss` cp of the best score.
- *  - With probability `edgeChance` play a RANDOM move inside that window
- *    (excluding the best); otherwise play the best.
+ * Elo bands:
+ *   <= 1000      -> depth 4,  maxLoss 350cp
+ *   1001 - 1500  -> depth 6,  maxLoss 300cp
+ *   1501 - 2000  -> depth 8,  maxLoss 250cp
+ *   2001 - 2500  -> depth 10, maxLoss 200cp
+ *   2501 - 3000  -> depth 12, maxLoss 150cp
+ *   > 3000       -> depth 12, maxLoss 100cp
  */
-export function chooseSkillMove(scores: RootScore[], level: number): RootScore | null {
+export function eloSettings(botElo: number): {
+  depth: number; maxLoss: number; bestChance: number; label: string;
+} {
+  const elo = Math.max(100, Math.min(3200, Math.round(botElo)));
+  const bestChance = bestMoveProbability(elo);
+  if (elo <= 1000) return { depth: 4, maxLoss: 350, bestChance, label: '≤1000' };
+  if (elo <= 1500) return { depth: 6, maxLoss: 300, bestChance, label: '1000-1500' };
+  if (elo <= 2000) return { depth: 8, maxLoss: 250, bestChance, label: '1600-2000' };
+  if (elo <= 2500) return { depth: 10, maxLoss: 200, bestChance, label: '2100-2500' };
+  if (elo <= 3000) return { depth: 12, maxLoss: 150, bestChance, label: '2600-3000' };
+  return { depth: 12, maxLoss: 100, bestChance, label: '3000-3200' };
+}
+
+/**
+ * Pick a move from the MultiPV list:
+ *  - With probability `bestChance` play the best move.
+ *  - Otherwise play a RANDOM move within `maxLoss` cp of the best (excluding the best).
+ */
+export function chooseEloMove(scores: RootScore[], botElo: number): RootScore | null {
   if (scores.length === 0) return null;
-  const { maxLoss, edgeChance } = skillSettings(level);
+  const { maxLoss, bestChance } = eloSettings(botElo);
   const sorted = [...scores].sort((a, b) => b.score - a.score);
   const best = sorted[0];
-  const inside = sorted.filter(c => best.score - c.score <= maxLoss);
-  if (inside.length <= 1) return best;
-  
-  // Exclude the best move from candidates for random selection
-  const suboptimal = inside.slice(1);
-  return Math.random() < edgeChance ? suboptimal[Math.floor(Math.random() * suboptimal.length)] : best;
+  if (Math.random() < bestChance) return best;
+
+  const inside = sorted.slice(1).filter(c => best.score - c.score <= maxLoss);
+  if (inside.length === 0) return best;
+  return inside[Math.floor(Math.random() * inside.length)];
 }
 
 /**
  * Helper: parse a UCI `info ... score cp|mate N ...` token stream into centipawns.
- * Mate scores are mapped to +/-90000 minus distance, so sorting still works.
  */
 export function parseUciScore(parts: string[]): number | null {
   const i = parts.indexOf('score');
