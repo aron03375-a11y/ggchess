@@ -1,7 +1,7 @@
 import { useRef, useCallback, useEffect, useState } from 'react';
 import { MittensFormula } from '@/types/bot';
 import { Chess } from 'chess.js';
-import { chooseSkillMove, skillSettings, RootScore } from '@/lib/skillFormula';
+import { chooseEloMove, eloSettings, RootScore } from '@/lib/skillFormula';
 
 interface UseStockfishOptions {
   skillLevel: number;
@@ -9,7 +9,7 @@ interface UseStockfishOptions {
   depth?: number;
   formula?: MittensFormula;
   uciElo?: number;
-  divisionLevel?: number;
+  botElo?: number;
 }
 
 interface MoveScore {
@@ -47,7 +47,7 @@ function selectMoveByFormula(moves: MoveScore[], formula: MittensFormula): strin
   return allowed[allowed.length - 1].move;
 }
 
-export const useStockfish = ({ skillLevel, moveTime = 500, depth, formula, uciElo, divisionLevel }: UseStockfishOptions) => {
+export const useStockfish = ({ skillLevel, moveTime = 500, depth, formula, uciElo, botElo }: UseStockfishOptions) => {
   const workerRef = useRef<Worker | null>(null);
   const resolverRef = useRef<((move: string | null) => void) | null>(null);
   const [isReady, setIsReady] = useState(false);
@@ -55,7 +55,7 @@ export const useStockfish = ({ skillLevel, moveTime = 500, depth, formula, uciEl
   const maxRestarts = 5;
   const collectedMovesRef = useRef<MoveScore[]>([]);
   const useFormula = !!formula;
-  const useDivision = typeof divisionLevel === 'number' && divisionLevel > 0;
+  const useDivision = typeof botElo === 'number' && botElo > 0;
 
   const initWorker = useCallback(() => {
     try {
@@ -113,8 +113,8 @@ export const useStockfish = ({ skillLevel, moveTime = 500, depth, formula, uciEl
           } else if (message.startsWith('bestmove')) {
             const collected = collectedMovesRef.current;
             if (useDivision && collected.length > 0) {
-              const picked = chooseSkillMove(collected as RootScore[], divisionLevel!);
-              console.log(`Skill div lvl ${divisionLevel}: picked ${picked?.move} from ${collected.length} lines`);
+              const picked = chooseEloMove(collected as RootScore[], botElo!);
+              console.log(`Elo ${botElo}: picked ${picked?.move} from ${collected.length} lines`);
               if (resolverRef.current) {
                 resolverRef.current(picked?.move ?? null);
                 resolverRef.current = null;
@@ -157,7 +157,7 @@ export const useStockfish = ({ skillLevel, moveTime = 500, depth, formula, uciEl
     } catch (e) {
       console.error('Failed to create Stockfish worker:', e);
     }
-  }, [skillLevel, useFormula, useDivision, divisionLevel, uciElo]);
+  }, [skillLevel, useFormula, useDivision, botElo, uciElo]);
 
   useEffect(() => {
     restartCountRef.current = 0;
@@ -208,7 +208,7 @@ export const useStockfish = ({ skillLevel, moveTime = 500, depth, formula, uciEl
 
         let goCommand = '';
         if (isDivisionBot) {
-          const s = skillSettings(divisionLevel!);
+          const s = eloSettings(botElo!);
           goCommand = `go depth ${s.depth}`;
         } else if (depth && isFormulaBot) {
           goCommand = `go depth ${depth} movetime ${formulaMoveTimeCap}`;
@@ -225,7 +225,7 @@ export const useStockfish = ({ skillLevel, moveTime = 500, depth, formula, uciEl
       }
 
       const timeoutMs = isDivisionBot
-        ? Math.max(8000, skillSettings(divisionLevel!).depth * 1500)
+        ? Math.max(8000, eloSettings(botElo!).depth * 1500)
         : isFormulaBot
           ? formulaMoveTimeCap + 2500
           : depth
@@ -236,8 +236,8 @@ export const useStockfish = ({ skillLevel, moveTime = 500, depth, formula, uciEl
         if (resolverRef.current !== resolve) return;
 
         if (isDivisionBot && collectedMovesRef.current.length > 0) {
-          const picked = chooseSkillMove(collectedMovesRef.current as RootScore[], divisionLevel!);
-          console.log(`Skill div timeout fallback lvl ${divisionLevel}: picked ${picked?.move}`);
+          const picked = chooseEloMove(collectedMovesRef.current as RootScore[], botElo!);
+          console.log(`Elo timeout fallback ${botElo}: picked ${picked?.move}`);
           collectedMovesRef.current = [];
           resolverRef.current = null;
           try { workerRef.current?.postMessage('stop'); } catch {}
@@ -265,7 +265,7 @@ export const useStockfish = ({ skillLevel, moveTime = 500, depth, formula, uciEl
         }, 1200);
       }, timeoutMs);
     });
-  }, [moveTime, depth, isReady, useFormula, formula, useDivision, divisionLevel]);
+  }, [moveTime, depth, isReady, useFormula, formula, useDivision, botElo]);
 
   return { getBestMove, isReady };
 };
