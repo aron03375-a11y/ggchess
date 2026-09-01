@@ -12,7 +12,7 @@ export interface Bot {
   depth?: number;
   image: string;
   greeting: string;
-  category: 'chessclub' | 'magnus';
+  category: 'chessclub' | 'magnus' | 'anonymous';
   formula?: MittensFormula;
   openingMoves?: Record<string, string>;
   uciElo?: number;
@@ -22,6 +22,11 @@ export interface Bot {
    * moves within maxLoss cp of the best.
    */
   divisionLevel?: number;
+  /**
+   * Optional display value for Elo (e.g. "?"). When set, this is shown in UI
+   * while the numeric `elo` is still used by the engine.
+   */
+  displayElo?: string;
 }
 
 export interface GameState {
