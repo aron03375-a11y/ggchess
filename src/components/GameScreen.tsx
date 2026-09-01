@@ -270,7 +270,7 @@ export const GameScreen = ({
             <img src={bot.image} alt={bot.name} className="w-12 h-12 rounded-lg object-cover" />
             <div className="flex items-center gap-1">
               <p className="font-fredoka font-semibold text-card-foreground">{bot.name}</p>
-              <p className="text-sm text-muted-foreground"> ({bot.elo})</p>
+              <p className="text-sm text-muted-foreground"> ({bot.displayElo ?? bot.elo})</p>
             </div>
           </div>
           {capturedPieces.top}
