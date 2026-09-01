@@ -11,6 +11,7 @@ import jamal11 from '@/assets/Jamal11.jpg.asset.json';
 import asha13 from '@/assets/Asha13.jpg.asset.json';
 import aizen15 from '@/assets/Aizen15.jpg.asset.json';
 import mei18 from '@/assets/Mei18.jpg.asset.json';
+import anonymousGrandmasterAsset from '@/assets/anonymous-grandmaster.jpg.asset.json';
 import { Bot } from '@/types/bot';
 
 // Chess club — same division/skill formula as every other bot (src/lib/skillFormula.ts).
@@ -151,4 +152,18 @@ export const magnusBots: Bot[] = [
   },
 ];
 
-export const allBots = [...chessClubBots, ...magnusBots];
+export const anonymousBots: Bot[] = [
+  {
+    id: 'anonymous-grandmaster',
+    name: 'Anonymous Grandmaster',
+    elo: 2725,
+    displayElo: '?',
+    skillLevel: 0,
+    divisionLevel: 25,
+    image: anonymousGrandmasterAsset.url,
+    greeting: 'My rating is a mystery.',
+    category: 'anonymous',
+  },
+];
+
+export const allBots = [...chessClubBots, ...magnusBots, ...anonymousBots];

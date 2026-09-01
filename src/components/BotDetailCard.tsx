@@ -39,7 +39,7 @@ export const BotDetailCard = ({
             </p>
           </div>
           <p className="text-sm md:text-base font-nunito font-medium mt-2">
-            {bot.name} ({bot.elo})
+            {bot.name} ({bot.displayElo ?? bot.elo})
           </p>
         </div>
       </div>
