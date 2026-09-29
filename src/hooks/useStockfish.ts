@@ -54,6 +54,8 @@ export const useStockfish = ({ skillLevel, moveTime = 500, depth, formula, uciEl
   const restartCountRef = useRef(0);
   const maxRestarts = 5;
   const collectedMovesRef = useRef<MoveScore[]>([]);
+  const pendingLinesRef = useRef<MoveScore[]>([]);
+  const lineDepthRef = useRef(0);
   const useFormula = !!formula;
   const useDivision = typeof botElo === 'number' && botElo > 0;
 
@@ -91,10 +93,16 @@ export const useStockfish = ({ skillLevel, moveTime = 500, depth, formula, uciEl
             setIsReady(true);
             restartCountRef.current = 0;
           } else if ((useFormula || useDivision) && message.startsWith('info') && message.includes(' pv ')) {
+            // Ignore partial/bound scores — they are unreliable.
+            if (message.includes('lowerbound') || message.includes('upperbound')) return;
+            const depthMatch = message.match(/ depth (\d+)/);
+            const mpvMatch = message.match(/ multipv (\d+)/);
             const scoreMatch = message.match(/score cp (-?\d+)/);
             const mateMatch = message.match(/score mate (-?\d+)/);
             const pvMatch = message.match(/ pv (\S+)/);
-            if (pvMatch) {
+            if (pvMatch && depthMatch) {
+              const d = parseInt(depthMatch[1]);
+              const idx = mpvMatch ? parseInt(mpvMatch[1]) - 1 : 0;
               let score = 0;
               if (scoreMatch) {
                 score = parseInt(scoreMatch[1]);
@@ -102,12 +110,19 @@ export const useStockfish = ({ skillLevel, moveTime = 500, depth, formula, uciEl
                 const mateIn = parseInt(mateMatch[1]);
                 score = mateIn > 0 ? 30000 - mateIn * 100 : -30000 + Math.abs(mateIn) * 100;
               }
-              const move = pvMatch[1];
-              const existing = collectedMovesRef.current.findIndex(m => m.move === move);
-              if (existing >= 0) {
-                collectedMovesRef.current[existing].score = score;
-              } else {
-                collectedMovesRef.current.push({ move, score });
+              // Keep only lines from the deepest completed iteration so stale
+              // shallow-depth scores never masquerade as the best move.
+              if (d > lineDepthRef.current) {
+                lineDepthRef.current = d;
+                pendingLinesRef.current = [];
+              }
+              if (d === lineDepthRef.current) {
+                pendingLinesRef.current[idx] = { move: pvMatch[1], score };
+                // Once multipv 1 at this depth arrives, promote the full set.
+                const filled = pendingLinesRef.current.filter(Boolean);
+                if (filled.length > 0 && pendingLinesRef.current[0]) {
+                  collectedMovesRef.current = filled.map(l => ({ ...l }));
+                }
               }
             }
           } else if (message.startsWith('bestmove')) {
