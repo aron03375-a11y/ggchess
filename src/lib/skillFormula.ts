@@ -18,42 +18,42 @@ export function bestMoveProbability(botElo: number): number {
 }
 
 /**
- * Elo bands:
- *   <= 1000      -> depth 4,  maxLoss 350cp
- *   1001 - 1500  -> depth 6,  maxLoss 300cp
- *   1501 - 2000  -> depth 8,  maxLoss 250cp
- *   2001 - 2500  -> depth 10, maxLoss 200cp
- *   2501 - 3000  -> depth 12, maxLoss 150cp
- *   > 3000       -> depth 12, maxLoss 100cp
+ * Elo bands (depth only):
+ *   <= 1000      -> depth 4
+ *   1001 - 1500  -> depth 6
+ *   1501 - 2000  -> depth 8
+ *   2001 - 2500  -> depth 10
+ *   2501 - 3000  -> depth 12
+ *   > 3000       -> depth 12
  */
 export function eloSettings(botElo: number): {
-  depth: number; maxLoss: number; bestChance: number; label: string;
+  depth: number; bestChance: number; label: string;
 } {
   const elo = Math.max(100, Math.min(3200, Math.round(botElo)));
   const bestChance = bestMoveProbability(elo);
-  if (elo <= 1000) return { depth: 4, maxLoss: 350, bestChance, label: '≤1000' };
-  if (elo <= 1500) return { depth: 6, maxLoss: 300, bestChance, label: '1000-1500' };
-  if (elo <= 2000) return { depth: 8, maxLoss: 250, bestChance, label: '1600-2000' };
-  if (elo <= 2500) return { depth: 10, maxLoss: 200, bestChance, label: '2100-2500' };
-  if (elo <= 3000) return { depth: 12, maxLoss: 150, bestChance, label: '2600-3000' };
-  return { depth: 12, maxLoss: 100, bestChance, label: '3000-3200' };
+  if (elo <= 1000) return { depth: 4, bestChance, label: '≤1000' };
+  if (elo <= 1500) return { depth: 6, bestChance, label: '1000-1500' };
+  if (elo <= 2000) return { depth: 8, bestChance, label: '1600-2000' };
+  if (elo <= 2500) return { depth: 10, bestChance, label: '2100-2500' };
+  if (elo <= 3000) return { depth: 12, bestChance, label: '2600-3000' };
+  return { depth: 12, bestChance, label: '3000-3200' };
 }
 
 /**
- * Pick a move from the MultiPV list:
+ * Pick a move from the MultiPV list (top 5):
  *  - With probability `bestChance` play the best move.
- *  - Otherwise play a RANDOM move within `maxLoss` cp of the best (excluding the best).
+ *  - Otherwise play a RANDOM move from the rest of the top 5 (excluding the best).
  */
 export function chooseEloMove(scores: RootScore[], botElo: number): RootScore | null {
   if (scores.length === 0) return null;
-  const { maxLoss, bestChance } = eloSettings(botElo);
-  const sorted = [...scores].sort((a, b) => b.score - a.score);
+  const { bestChance } = eloSettings(botElo);
+  const sorted = [...scores].sort((a, b) => b.score - a.score).slice(0, 5);
   const best = sorted[0];
   if (Math.random() < bestChance) return best;
 
-  const inside = sorted.slice(1).filter(c => best.score - c.score <= maxLoss);
-  if (inside.length === 0) return best;
-  return inside[Math.floor(Math.random() * inside.length)];
+  const rest = sorted.slice(1);
+  if (rest.length === 0) return best;
+  return rest[Math.floor(Math.random() * rest.length)];
 }
 
 /**
