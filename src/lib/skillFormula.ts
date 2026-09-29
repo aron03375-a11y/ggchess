@@ -1,4 +1,4 @@
-// Pure Elo-based bot strength logic: depth, maxLoss, best-move probability, and picker.
+// Pure Elo-based bot strength logic: depth, best-move probability, and top-5 picker.
 // Zero dependencies.
 //
 // Usage:
