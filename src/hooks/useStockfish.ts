@@ -193,10 +193,7 @@ export const useStockfish = ({ skillLevel, moveTime = 500, depth, formula, uciEl
 
       try {
         if (isDivisionBot) {
-          const tempGame = new Chess(fen);
-          const legalMoves = tempGame.moves().length;
-          const mpv = Math.max(1, legalMoves);
-          workerRef.current.postMessage(`setoption name MultiPV value ${mpv}`);
+          workerRef.current.postMessage('setoption name MultiPV value 5');
         } else if (isFormulaBot) {
           const tempGame = new Chess(fen);
           const legalMoves = tempGame.moves().length;
