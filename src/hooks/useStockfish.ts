@@ -113,19 +113,20 @@ export const useStockfish = ({ skillLevel, moveTime = 500, depth, formula, uciEl
               // Keep only lines from the deepest completed iteration so stale
               // shallow-depth scores never masquerade as the best move.
               if (d > lineDepthRef.current) {
+                const prev = pendingLinesRef.current.filter(Boolean);
+                if (prev.length > 0) collectedMovesRef.current = prev;
                 lineDepthRef.current = d;
                 pendingLinesRef.current = [];
               }
               if (d === lineDepthRef.current) {
                 pendingLinesRef.current[idx] = { move: pvMatch[1], score };
-                // Once multipv 1 at this depth arrives, promote the full set.
-                const filled = pendingLinesRef.current.filter(Boolean);
-                if (filled.length > 0 && pendingLinesRef.current[0]) {
-                  collectedMovesRef.current = filled.map(l => ({ ...l }));
-                }
               }
             }
           } else if (message.startsWith('bestmove')) {
+            const finalLines = pendingLinesRef.current.filter(Boolean);
+            if (finalLines.length > 0) collectedMovesRef.current = finalLines;
+            pendingLinesRef.current = [];
+            lineDepthRef.current = 0;
             const collected = collectedMovesRef.current;
             if (useDivision && collected.length > 0) {
               const picked = chooseEloMove(collected as RootScore[], botElo!);
@@ -199,6 +200,8 @@ export const useStockfish = ({ skillLevel, moveTime = 500, depth, formula, uciEl
 
       resolverRef.current = resolve;
       collectedMovesRef.current = [];
+      pendingLinesRef.current = [];
+      lineDepthRef.current = 0;
 
       const isFormulaBot = useFormula && !!formula;
       const isDivisionBot = useDivision;
